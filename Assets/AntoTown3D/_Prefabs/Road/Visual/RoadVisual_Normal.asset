@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9abdd172eb8856240ae904f51ab5530a, type: 3}
+  m_Name: RoadVisual_Normal
+  m_EditorClassIdentifier: Assembly-CSharp::RoadVisualSet
+  end: {fileID: 1818677223912654145, guid: fce43bef681438b4f91b739dca50c487, type: 3}
+  straight: {fileID: 8102961703196686948, guid: afc81fa3089662c41afb08383b9d7344, type: 3}
+  curve: {fileID: 7418099874469407748, guid: e2b19526b69e3d7439cd52d462d511ff, type: 3}
+  tJunction: {fileID: 3113236348628156350, guid: 6718fbeca32ff1e4a8132b17b9bb168c, type: 3}
+  crossroad: {fileID: 1935117251837071927, guid: d04a552e80b176d4db787e499e8dfda0, type: 3}
