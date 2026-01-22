@@ -2,12 +2,27 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+public enum PlacementMode
+{
+    None,
+    Road,
+    ZoneResidential,
+    ZoneCommercial,
+    ZoneIndustry
+}
+
 public class SelectionManager : MonoBehaviour
 {
     public GridManager gridManager;
     public BuildingManager buildingManager;
     public GameObject buildingPrefab;
     public GameObject roadPrefab;
+
+    // Area
+    public PlacementMode currentMode;
+    bool isDraggingZone;
+    Tile zoneStartTile;
+    List<Tile> zonePreviewTiles = new();
 
     [Header("Building Buttons")]
     public UnityEngine.UI.Button residentialButton;
@@ -40,19 +55,46 @@ public class SelectionManager : MonoBehaviour
 
     void Update()
     {
-        if (!gridManager.isPlacing || gridManager.previewObject == null || 
-            (gridManager.currentPlacementType == PlacementType.Road && !gridManager.roadModeActive))
-            return;
+        bool isZoneMode =
+    currentMode == PlacementMode.ZoneResidential ||
+    currentMode == PlacementMode.ZoneCommercial ||
+    currentMode == PlacementMode.ZoneIndustry;
+
+        if (!isZoneMode)
+        {
+            if (!gridManager.isPlacing || gridManager.previewObject == null ||
+                (gridManager.currentPlacementType == PlacementType.Road && !gridManager.roadModeActive))
+                return;
+        }
+
+        if (!isZoneMode)
+        {
+            gridManager.MovePreviewToMouse();
+        }
 
         Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-        if (!Physics.Raycast(ray, out RaycastHit hit, 200f, LayerMask.GetMask("Ground")))
+        if (!Physics.Raycast(ray, out RaycastHit hit, 200f, LayerMask.GetMask("Tile")))
             return;
 
-        Tile tile = gridManager.GetTileAtPosition(hit.point);
+        Tile tile = hit.collider.GetComponent<Tile>();
         if (tile == null) return;
 
-        gridManager.previewObject.transform.position =
-            gridManager.SnapToTile(tile.transform.position);
+        // Ini menyembunyikan area bangunan
+        if (currentMode == PlacementMode.None &&
+    Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            if (hit.collider.GetComponent<Building>() == null)
+            {
+                gridManager.ClearArea();
+            }
+        }
+
+
+        if (!isZoneMode && gridManager.previewObject != null)
+        {
+            gridManager.previewObject.transform.position =
+                gridManager.SnapToTile(tile.transform.position);
+        }
 
         // ROAD MODE
         if (gridManager.currentPlacementType == PlacementType.Road)
@@ -92,6 +134,15 @@ public class SelectionManager : MonoBehaviour
             }
         }
 
+        // ZONE MODE
+        if (currentMode == PlacementMode.ZoneResidential ||
+            currentMode == PlacementMode.ZoneCommercial ||
+            currentMode == PlacementMode.ZoneIndustry)
+        {
+            HandleZonePlacement(tile);
+            return;
+        }
+
         // BUILDING MODE
         if (gridManager.currentPlacementType == PlacementType.Building && Mouse.current.leftButton.wasPressedThisFrame)
         {
@@ -99,12 +150,11 @@ public class SelectionManager : MonoBehaviour
             if (buildingPrefab != null)
             {
                 buildingManager.PlaceBuilding(buildingPrefab, tile);
-
+                gridManager.ClearHighlightedTiles();
                 // Panggil notifikasi jika bangunan adalah PowerPlant / WaterSource
-                if (buildingPrefab.buildingType == BuildingType.PowerPlant ||
-                    buildingPrefab.buildingType == BuildingType.WaterSource)
+                if (buildingPrefab.buildingType == BuildingType.PowerPlant || buildingPrefab.buildingType == BuildingType.WaterSource)
                 {
-                    buildingManager.NotifyNeighbors(tile);
+                    buildingManager.RecheckAllBuildings();
                 }
 
                 // Hentikan placing mode
@@ -119,6 +169,9 @@ public class SelectionManager : MonoBehaviour
     // Road 
     public void ToggleRoadMode()
     {
+        currentMode = PlacementMode.None;
+        ClearZonePreview();
+
         gridManager.roadModeActive = !gridManager.roadModeActive;
 
         var colors = roadButton.colors;
@@ -160,7 +213,8 @@ public class SelectionManager : MonoBehaviour
         {
             gridManager.PlaceObject(tile);
             placedTiles.Add(tile);
-            gridManager.buildingManager.NotifyNeighbors(tile);
+
+            buildingManager.RecheckAllBuildings();
         }
     }
 
@@ -195,9 +249,18 @@ public class SelectionManager : MonoBehaviour
 
     public void SelectBuilding(Building prefab)
     {
+        // ❗ KELUAR DARI ZONE MODE
+        currentMode = PlacementMode.None;
+        ClearZonePreview();
         // Turn off road mode
         gridManager.roadModeActive = false;
-        roadButton.image.color = roadInactiveColor;
+
+        // Reset warna tombol road ke default/nonaktif
+        var colors = roadButton.colors;
+        colors.normalColor = roadInactiveColor;
+        colors.highlightedColor = roadInactiveColor;
+        colors.selectedColor = roadInactiveColor;
+        roadButton.colors = colors;
 
         // Safety reset
         isDraggingRoad = false;
@@ -214,4 +277,157 @@ public class SelectionManager : MonoBehaviour
     public void SelectPowerPlant() => SelectBuilding(powerPlantPrefab);
     public void SelectWaterSource() => SelectBuilding(waterSourcePrefab);
 
+    // Zone Area
+    class ZoneSelection
+    {
+        public Tile start;
+        public Tile end;
+        public List<Tile> tiles = new();
+    }
+
+    void HandleZonePlacement(Tile tile)
+    {
+        // START DRAG
+        if (Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            isDraggingZone = true;
+            zoneStartTile = tile;
+            zonePreviewTiles.Clear();
+        }
+
+        // DRAG
+        if (isDraggingZone && Mouse.current.leftButton.isPressed)
+        {
+            UpdateZonePreview(zoneStartTile, tile);
+        }
+
+        // RELEASE
+        if (isDraggingZone && Mouse.current.leftButton.wasReleasedThisFrame)
+        {
+            ConfirmZonePlacement();
+            ClearZonePreview();
+            isDraggingZone = false;
+        }
+    }
+
+    void UpdateZonePreview(Tile start, Tile current)
+    {
+        ClearZonePreview();
+
+        int minX = Mathf.Min(start.gridPosition.x, current.gridPosition.x);
+        int maxX = Mathf.Max(start.gridPosition.x, current.gridPosition.x);
+        int minZ = Mathf.Min(start.gridPosition.y, current.gridPosition.y);
+        int maxZ = Mathf.Max(start.gridPosition.y, current.gridPosition.y);
+
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int z = minZ; z <= maxZ; z++)
+            {
+                Tile t = gridManager.tiles[x, z];
+                zonePreviewTiles.Add(t);
+
+                bool valid = CanZoneTileBuild(t);
+                t.SetPreview(valid); // hijau / merah
+            }
+        }
+    }
+
+    bool CanZoneTileBuild(Tile tile)
+    {
+        if (tile.isOccupied) return false;
+        if (!HasRoadAccess(tile)) return false;
+        if (!HasUtilityCoverage(tile)) return false;
+
+        Building prefab = GetZonePrefab();
+        return buildingManager.CanPlaceBuilding(tile, prefab);
+    }
+
+    bool HasRoadAccess(Tile tile)
+    {
+        foreach (var n in gridManager.GetNeighbors(tile))
+        {
+            if (n.currentObject == null) continue;
+
+            if (n.currentObject.GetComponent<RoadTile>() != null)
+                return true;
+        }
+        return false;
+    }
+
+    bool HasUtilityCoverage(Tile tile)
+    {
+        return buildingManager.HasUtilityForTile(tile);
+    }
+
+    void ConfirmZonePlacement()
+    {
+        Building prefab = GetZonePrefab();
+
+        foreach (var tile in zonePreviewTiles)
+        {
+            if (!CanZoneTileBuild(tile)) continue;
+
+            buildingManager.EnqueueZoneBuilding(prefab, tile);
+        }
+
+        currentMode = PlacementMode.None;
+    }
+
+
+    Building GetZonePrefab()
+    {
+        return currentMode switch
+        {
+            PlacementMode.ZoneResidential => residentialPrefab,
+            PlacementMode.ZoneCommercial => commercialPrefab,
+            PlacementMode.ZoneIndustry => industryPrefab,
+            _ => null
+        };
+    }
+
+    void ClearZonePreview()
+    {
+        foreach (var t in zonePreviewTiles)
+            t.ClearPreview();
+
+        zonePreviewTiles.Clear();
+    }
+
+    public void SelectResidentialZone()
+    {
+        currentMode = PlacementMode.ZoneResidential;
+
+        gridManager.roadModeActive = false;
+        gridManager.currentPlacementType = PlacementType.None;
+
+        if (gridManager.previewObject != null)
+            Destroy(gridManager.previewObject);
+    }
+
+
+    public void ExitZoneMode()
+    {
+        currentMode = PlacementMode.None;
+        ClearZonePreview();
+    }
+
+    public void SelectCommercialZone()
+    {
+        currentMode = PlacementMode.ZoneCommercial;
+        gridManager.roadModeActive = false;
+        gridManager.currentPlacementType = PlacementType.None;
+
+        if (gridManager.previewObject != null)
+            Destroy(gridManager.previewObject);
+    }
+
+    public void SelectIndustryZone()
+    {
+        currentMode = PlacementMode.ZoneIndustry;
+        gridManager.roadModeActive = false;
+        gridManager.currentPlacementType = PlacementType.None;
+
+        if (gridManager.previewObject != null)
+            Destroy(gridManager.previewObject);
+    }
 }

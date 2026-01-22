@@ -24,22 +24,37 @@ public class Building : MonoBehaviour, IPlaceable
 
     [Header("Area & Connection")]
     public bool hasArea = false;
+    public int areaRadiusInTiles = 0;
     public bool connectedToRoad = false;
-    public bool connectedToUtilities = false;
+    public bool connectedToPower = false;
+    public bool connectedToWater = false;
     public GameObject warningMark;
 
-    [Header("Happiness & Upgrade")]
-    public float happinessEffect = 0f;
+    [Header("Upgrade Settings")]
+    public bool canUpgrade = false;
     public float upgradeTimer = 0f; // seconds
-    public float upgradeInterval = 300f; // default 5 minutes
+    public float upgradeInterval = 30f; // default 5 minutes
+    MeshScaleAnimator meshAnimator;
+
+    [Tooltip("Aktif jika canUpgrade = true")]
+    public GameObject poorMesh;
+    public GameObject middleMesh;
+    public GameObject richMesh;
+
+    [Header("Happiness")]
+    public float happinessEffect = 0f;
+    [Header("Economy & Population")]
+    public int buildPrice = 100;        // Harga membangun
+    public int populationCapacity = 0;  // Kapasitas penduduk (untuk residential)
+    public int currentPopulation = 0;   // Populasi saat ini (misal bisa berkembang)
+    public float incomePerTick = 0f;    // Pendapatan / pajak per tick atau per detik
 
     [HideInInspector] public Tile placedTile;
     [HideInInspector] public BuildingManager manager;
+    [HideInInspector] public List<Tile> occupiedTiles = new();
 
-    void Start()
-    {
-        //if (warningMark != null) warningMark.SetActive(false);
-    }
+    bool isUpgrading = false;
+
 
     public void OnPlace(Tile tile, BuildingManager buildingManager)
     {
@@ -49,143 +64,217 @@ public class Building : MonoBehaviour, IPlaceable
         CheckRoadConnection();
         CheckUtilitiesConnection();
         ApplyHappinessEffect();
+        meshAnimator = GetComponent<MeshScaleAnimator>();
+
+        level = BuildingLevel.Poor;
         upgradeTimer = 0f;
+
+        UpdateUpgradeVisual();
+
+        if (meshAnimator != null)
+        {
+            StartCoroutine(meshAnimator.Show(GetCurrentMesh()));
+        }
+
+        UpdateWarningMark();
         UpdateWarningMark();
     }
+    GameObject GetCurrentMesh()
+    {
+        return level switch
+        {
+            BuildingLevel.Poor => poorMesh,
+            BuildingLevel.Middle => middleMesh,
+            BuildingLevel.Rich => richMesh,
+            _ => null
+        };
+    }
+
 
     public void CheckRoadConnection()
     {
-        if (placedTile == null || manager == null) return;
+        if (manager == null) return;
 
         connectedToRoad = false;
 
-        var neighbors = manager.GetNeighborTiles(placedTile);
-        foreach (var neighbor in neighbors)
+        foreach (var tile in occupiedTiles)
         {
-            if (neighbor.currentObject != null)
+            var neighbors = manager.GetNeighborTiles(tile);
+            foreach (var neighbor in neighbors)
             {
-                var road = neighbor.currentObject.GetComponent<RoadTile>();
-                if (road != null)
+                if (neighbor.currentObject != null &&
+                    neighbor.currentObject.GetComponent<RoadTile>() != null)
                 {
                     connectedToRoad = true;
-                    break;
+                    return;
                 }
             }
         }
-
-        //UpdateWarningMark();
-
-#if UNITY_EDITOR
-        Debug.Log($"{buildingName} connectedToRoad: {connectedToRoad}");
-#endif
     }
-
 
     public void CheckUtilitiesConnection()
     {
-        if (buildingType == BuildingType.Residential ||
-            buildingType == BuildingType.Commercial ||
-            buildingType == BuildingType.Industry)
+        // Non-residential tidak butuh utility
+        if (buildingType != BuildingType.Residential &&
+            buildingType != BuildingType.Commercial &&
+            buildingType != BuildingType.Industry)
         {
-            connectedToUtilities = false;
+            connectedToPower = true;
+            connectedToWater = true;
+            return;
+        }
 
-            foreach (var neighbor in manager.GetNeighborTiles(placedTile))
+        connectedToPower = false;
+        connectedToWater = false;
+
+        foreach (var utility in manager.placedBuildings)
+        {
+            if (!utility.hasArea) continue;
+
+            bool isPower = utility.buildingType == BuildingType.PowerPlant;
+            bool isWater = utility.buildingType == BuildingType.WaterSource;
+
+            if (!isPower && !isWater) continue;
+
+            int r = utility.areaRadiusInTiles;
+            Vector2 center = utility.GetCenterGridPosition();
+
+            foreach (var tile in occupiedTiles)
             {
-                if (neighbor.currentObject != null)
+                Vector2Int p = tile.gridPosition;
+                float dx = p.x - center.x;
+                float dz = p.y - center.y;
+
+                if (dx * dx + dz * dz <= r * r)
                 {
-                    var bld = neighbor.currentObject.GetComponent<Building>();
-                    if (bld != null && (bld.buildingType == BuildingType.PowerPlant || bld.buildingType == BuildingType.WaterSource))
-                    {
-                        connectedToUtilities = true;
-                        break;
-                    }
+                    if (isPower) connectedToPower = true;
+                    if (isWater) connectedToWater = true;
                 }
             }
+        }
+    }
 
-            //UpdateWarningMark();
-        }
-        else
+    public Vector2 GetCenterGridPosition()
+    {
+        if (occupiedTiles == null || occupiedTiles.Count == 0)
+            return new Vector2(
+                placedTile.gridPosition.x,
+                placedTile.gridPosition.y
+            );
+
+        int minX = int.MaxValue, minZ = int.MaxValue;
+        int maxX = int.MinValue, maxZ = int.MinValue;
+
+        foreach (var t in occupiedTiles)
         {
-            connectedToUtilities = true; // park, power, water tidak perlu koneksi
+            minX = Mathf.Min(minX, t.gridPosition.x);
+            minZ = Mathf.Min(minZ, t.gridPosition.y);
+            maxX = Mathf.Max(maxX, t.gridPosition.x);
+            maxZ = Mathf.Max(maxZ, t.gridPosition.y);
         }
+
+        return new Vector2(
+            (minX + maxX) * 0.5f,
+            (minZ + maxZ) * 0.5f
+        );
     }
 
     public void UpdateWarningMark()
     {
-        if (warningMark != null)
+        if (warningMark == null) return;
+
+        bool shouldShow = false;
+
+        if (buildingType == BuildingType.Residential ||
+            buildingType == BuildingType.Commercial ||
+            buildingType == BuildingType.Industry)
         {
-            bool shouldShow = false;
-
-            if ((buildingType == BuildingType.Residential ||
-                 buildingType == BuildingType.Commercial ||
-                 buildingType == BuildingType.Industry))
-            {
-                shouldShow = !(connectedToRoad && connectedToUtilities);
-            }
-
-            warningMark.SetActive(shouldShow);
-
-            Debug.Log($"{buildingName} - connectedToRoad: {connectedToRoad}, connectedToUtilities: {connectedToUtilities}, shouldShowMarker: {shouldShow}");
-        }
-        if (warningMark != null)
-        {
-            bool shouldShow = !(connectedToRoad && connectedToUtilities);
-            warningMark.SetActive(shouldShow);
-
-            Debug.Log($"{buildingName} Marker active: {warningMark.activeSelf}, shouldShow: {shouldShow}, position: {warningMark.transform.position}");
+            shouldShow = !(connectedToRoad && connectedToPower && connectedToWater);
         }
 
+        warningMark.SetActive(shouldShow);
+
+        Debug.Log(
+            $"{buildingName} | Road:{connectedToRoad} Power:{connectedToPower} Water:{connectedToWater} Warning:{shouldShow}"
+        );
     }
 
     public void Upgrade(float deltaTime)
     {
-        if (!IsOperational()) return;
+        if (!canUpgrade) return;
+        if (isUpgrading) return;
+        if (level == BuildingLevel.Rich) return;
 
         upgradeTimer += deltaTime;
 
-        // pengaruh kebahagiaan area mempercepat upgrade
-        float happinessMultiplier = 1f + (manager.CalculateHappinessForBuilding(this) / 100f);
-        if (upgradeTimer >= upgradeInterval / happinessMultiplier)
+        if (upgradeTimer >= upgradeInterval)
         {
-            if (level == BuildingLevel.Poor) level = BuildingLevel.Middle;
-            else if (level == BuildingLevel.Middle) level = BuildingLevel.Rich;
-
-            upgradeTimer = 0f;
-            ApplyHappinessEffect();
+            StartCoroutine(UpgradeSequence());
         }
+    }
+
+    IEnumerator UpgradeSequence()
+    {
+        isUpgrading = true;
+        upgradeTimer = 0f;
+
+        GameObject oldMesh = GetCurrentMesh();
+
+        // Fade OUT mesh lama
+        if (meshAnimator != null && oldMesh != null)
+            yield return meshAnimator.Hide(oldMesh);
+
+        // Naik level
+        if (level == BuildingLevel.Poor)
+            level = BuildingLevel.Middle;
+        else if (level == BuildingLevel.Middle)
+            level = BuildingLevel.Rich;
+
+        UpdateUpgradeVisual();
+
+        GameObject newMesh = GetCurrentMesh();
+
+        // Fade IN mesh baru
+        if (meshAnimator != null && newMesh != null)
+            yield return meshAnimator.Show(newMesh);
+
+        ApplyHappinessEffect();
+
+        isUpgrading = false;
+
+        Debug.Log($"{buildingName} upgraded to {level}");
     }
 
     public void ApplyHappinessEffect()
     {
         if (!hasArea) return;
 
-        var nearbyBuildings = manager.GetBuildingsInArea(transform.position, size.x * 2f);
+        var affected = manager.GetBuildingsInRadius(this);
 
-        foreach (var bld in nearbyBuildings)
+        foreach (var b in affected)
         {
-            if (bld.buildingType == BuildingType.Residential || bld.buildingType == BuildingType.Commercial)
+            if (b.buildingType == BuildingType.Residential ||
+                b.buildingType == BuildingType.Commercial)
             {
-                float effect = 0f;
-
-                switch (buildingType)
+                float effect = buildingType switch
                 {
-                    case BuildingType.Park: effect = 10f; break;
-                    case BuildingType.Industry: effect = -5f; break;
-                    default: effect = 0f; break;
-                }
+                    BuildingType.Park => 10f,
+                    BuildingType.Industry => -5f,
+                    _ => 0f
+                };
 
-                bld.happinessEffect += effect;
+                b.happinessEffect += effect;
             }
         }
     }
 
     public bool IsOperational()
     {
-        if ((buildingType == BuildingType.Residential ||
+        if (buildingType == BuildingType.Residential ||
             buildingType == BuildingType.Commercial ||
-            buildingType == BuildingType.Industry))
+            buildingType == BuildingType.Industry)
         {
-            return connectedToRoad && connectedToUtilities;
+            return connectedToRoad && connectedToPower && connectedToWater;
         }
         return true;
     }
@@ -200,4 +289,38 @@ public class Building : MonoBehaviour, IPlaceable
     {
         // hapus dari manager dll
     }
+
+    void UpdateUpgradeVisual()
+    {
+        if (!canUpgrade) return;
+
+        if (poorMesh != null) poorMesh.SetActive(level == BuildingLevel.Poor);
+        if (middleMesh != null) middleMesh.SetActive(level == BuildingLevel.Middle);
+        if (richMesh != null) richMesh.SetActive(level == BuildingLevel.Rich);
+    }
+
+    void OnValidate()
+    {
+        if (canUpgrade)
+        {
+            if (poorMesh == null || middleMesh == null || richMesh == null)
+            {
+                Debug.LogWarning($"{name} canUpgrade aktif tapi mesh belum lengkap!");
+            }
+        }
+    }
+
+    public void DestroyBuilding()
+    {
+        StartCoroutine(DestroySequence());
+    }
+
+    IEnumerator DestroySequence()
+    {
+        var mesh = GetCurrentMesh();
+        if (meshAnimator != null && mesh != null)
+            yield return meshAnimator.Hide(GetCurrentMesh());
+        Destroy(gameObject);
+    }
+
 }

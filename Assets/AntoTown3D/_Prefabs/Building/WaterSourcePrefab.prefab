@@ -27,7 +27,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 9121441034764010277}
@@ -48,10 +48,11 @@ MonoBehaviour:
   buildingName: Water
   cost: 0
   population: 0
-  size: {x: 2, y: 2, z: 2}
+  size: {x: 2, y: 1, z: 2}
   buildingType: 4
   level: 0
   hasArea: 1
+  areaRadiusInTiles: 5
   connectedToRoad: 0
   connectedToUtilities: 0
   warningMark: {fileID: 3018949176783794100}
@@ -88,9 +89,9 @@ Transform:
   m_GameObject: {fileID: 2710693631597279810}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalPosition: {x: 0, y: 0.4, z: 0}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1101638119849115008}
   m_Father: {fileID: 378498267946775102}
@@ -190,7 +191,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1101638119849115008
 Transform:
   m_ObjectHideFlags: 0

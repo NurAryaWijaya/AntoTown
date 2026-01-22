@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0.5, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.8, y: 1, z: 0.8}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4693945214104935730}
@@ -108,7 +108,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -122,6 +122,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3505579954754977005}
   - component: {fileID: 8668254911276074223}
+  - component: {fileID: 6415964869145201056}
   m_Layer: 0
   m_Name: PowerPlantPrefab
   m_TagString: Untagged
@@ -139,7 +140,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1579495438512781823}
@@ -160,18 +161,50 @@ MonoBehaviour:
   buildingName: Power
   cost: 0
   population: 0
-  size: {x: 2, y: 2, z: 2}
+  size: {x: 2, y: 1, z: 2}
   buildingType: 3
   level: 0
   hasArea: 1
+  areaRadiusInTiles: 5
   connectedToRoad: 0
-  connectedToUtilities: 0
+  connectedToPower: 0
+  connectedToWater: 0
   warningMark: {fileID: 5157765366496816122}
-  happinessEffect: 0
+  canUpgrade: 0
   upgradeTimer: 0
   upgradeInterval: 300
+  poorMesh: {fileID: 0}
+  middleMesh: {fileID: 0}
+  richMesh: {fileID: 0}
+  happinessEffect: 0
+  buildPrice: 100
+  populationCapacity: 0
+  currentPopulation: 0
+  incomePerTick: 0
   placedTile: {fileID: 0}
   manager: {fileID: 0}
+  occupiedTiles: []
+--- !u!65 &6415964869145201056
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4198125537071019364}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &5157765366496816122
 GameObject:
   m_ObjectHideFlags: 0
@@ -190,7 +223,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4693945214104935730
 Transform:
   m_ObjectHideFlags: 0

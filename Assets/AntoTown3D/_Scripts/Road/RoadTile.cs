@@ -160,7 +160,7 @@ public class RoadTile : MonoBehaviour, IPlaceable
         if (prefab == null) return;
 
         currentVisual = Instantiate(prefab, visualRoot);
-        currentVisual.transform.localPosition = Vector3.zero;
+        currentVisual.transform.localPosition = new Vector3(0, 0.001f, 0);
 
         UpdateRotation();
     }
