@@ -177,33 +177,11 @@ public class BuildingManager : MonoBehaviour
         return result;
     }
 
-
-    public float CalculateHappinessForBuilding(Building building)
-    {
-        float happiness = 0f;
-        var nearby = GetBuildingsInRadius(building);
-
-        foreach (var b in nearby)
-        {
-            happiness += b.happinessEffect;
-        }
-
-        return happiness;
-    }
-
     public void UpgradeBuildings(float deltaTime)
     {
         foreach (var b in placedBuildings)
         {
             b.Upgrade(deltaTime);
-        }
-    }
-
-    public void UpdateHappinessAreas()
-    {
-        foreach (var b in placedBuildings)
-        {
-            b.ApplyHappinessEffect();
         }
     }
 
@@ -239,67 +217,91 @@ public class BuildingManager : MonoBehaviour
 
     void ProcessZoneSpawn(float deltaTime)
     {
-        if (zoneSpawnQueue.Count == 0)
-            return;
+        if (zoneSpawnQueue.Count == 0) return;
 
-        // Tambahkan waktu
         zoneSpawnTimer += deltaTime;
+        if (zoneSpawnTimer < zoneSpawnInterval) return;
 
-        if (zoneSpawnTimer < zoneSpawnInterval)
-            return;
-
-        // Ambil item dari antrian dan spawn
         var (prefab, tile) = zoneSpawnQueue.Dequeue();
+        if (tile == null || tile.isOccupied) return;
 
-        if (tile != null && !tile.isOccupied)
-        {
-            PlaceBuilding(prefab, tile);
-            RecheckAllBuildings();
-        }
+        // Hitung posisi center bangunan
+        float offsetX = (prefab.size.x - 1) * 0.5f * gridManager.tileSize;
+        float offsetZ = (prefab.size.z - 1) * 0.5f * gridManager.tileSize;
+        Vector3 basePos = gridManager.SnapToTile(tile.transform.position);
+        Vector3 centerPos = basePos + new Vector3(offsetX, 0, offsetZ);
+
+        // Pasang bangunan
+        Building building = PlaceBuilding(prefab, tile);
+
+        // **Update rotasi ke jalan setelah bangunan terpasang**
+        building.transform.rotation = GetRotationFacingRoad(prefab, tile, centerPos);
+
+        // Update semua building agar neighbor road dikenali
+        RecheckAllBuildings();
 
         // Reset timer
-        zoneSpawnTimer = Random.Range(0f, 1f); // ✅ LETAKNYA DI SINI
+        zoneSpawnTimer = Random.Range(0f, 1f);
     }
 
-    Quaternion GetRotationFacingRoad(Building prefab, Tile tile, Vector3 centerPosition)
+
+    Quaternion GetRotationFacingRoad(Building prefab, Tile originTile, Vector3 centerPosition)
     {
-        // Ambil semua tile yang akan ditempati
-        List<Tile> tilesToCheck = new();
+        // Loop semua tile bangunan
         for (int x = 0; x < prefab.size.x; x++)
         {
             for (int z = 0; z < prefab.size.z; z++)
             {
-                int nx = tile.gridPosition.x + x;
-                int nz = tile.gridPosition.y + z;
-                tilesToCheck.Add(gridTiles[nx, nz]);
+                int bx = originTile.gridPosition.x + x;
+                int bz = originTile.gridPosition.y + z;
+
+                Tile buildingTile = gridTiles[bx, bz];
+
+                // Cek 4 arah cardinal SAJA
+                TryRotate(buildingTile, bx, bz, Vector2Int.up, Vector3.forward, out Quaternion rot);
+                if (rot != Quaternion.identity) return rot;
+
+                TryRotate(buildingTile, bx, bz, Vector2Int.down, Vector3.back, out rot);
+                if (rot != Quaternion.identity) return rot;
+
+                TryRotate(buildingTile, bx, bz, Vector2Int.right, Vector3.right, out rot);
+                if (rot != Quaternion.identity) return rot;
+
+                TryRotate(buildingTile, bx, bz, Vector2Int.left, Vector3.left, out rot);
+                if (rot != Quaternion.identity) return rot;
             }
         }
 
-        // Cari neighbor dengan road
-        foreach (var t in tilesToCheck)
-        {
-            foreach (var n in GetNeighborTiles(t))
-            {
-                if (n.currentObject != null && n.currentObject.GetComponent<RoadTile>() != null)
-                {
-                    Vector3 direction = n.transform.position - centerPosition;
-                    direction.y = 0;
-                    if (direction == Vector3.zero) continue;
-
-                    // Snap arah ke 4 arah utama (N, S, E, W)
-                    Vector3 snappedDir = Vector3.zero;
-                    if (Mathf.Abs(direction.x) > Mathf.Abs(direction.z))
-                        snappedDir = new Vector3(Mathf.Sign(direction.x), 0, 0); // E atau W
-                    else
-                        snappedDir = new Vector3(0, 0, Mathf.Sign(direction.z)); // N atau S
-
-                    return Quaternion.LookRotation(snappedDir);
-                }
-            }
-        }
-
-        return Quaternion.identity; // default jika tidak ada jalan
+        return Quaternion.identity;
     }
 
+    bool TryRotate(
+        Tile buildingTile,
+        int bx,
+        int bz,
+        Vector2Int offset,
+        Vector3 lookDir,
+        out Quaternion rotation)
+    {
+        rotation = Quaternion.identity;
 
+        int nx = bx + offset.x;
+        int nz = bz + offset.y;
+
+        if (nx < 0 || nz < 0 ||
+            nx >= gridTiles.GetLength(0) ||
+            nz >= gridTiles.GetLength(1))
+            return false;
+
+        Tile neighbor = gridTiles[nx, nz];
+
+        if (neighbor.currentObject != null &&
+            neighbor.currentObject.GetComponent<RoadTile>() != null)
+        {
+            rotation = Quaternion.LookRotation(lookDir);
+            return true;
+        }
+
+        return false;
+    }
 }

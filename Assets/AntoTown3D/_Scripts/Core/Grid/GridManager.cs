@@ -356,6 +356,13 @@ public class GridManager : MonoBehaviour
 
         areaHighlightedTiles.Clear();
     }
+
+    public void RegisterHighlightedTile(Tile tile)
+    {
+        if (!highlightedTiles.Contains(tile))
+            highlightedTiles.Add(tile);
+    }
+
     #endregion
 }
 

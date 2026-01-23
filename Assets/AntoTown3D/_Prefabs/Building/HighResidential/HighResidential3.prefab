@@ -189,6 +189,7 @@ GameObject:
   - component: {fileID: 2486326762006310313}
   - component: {fileID: -7225624157298301275}
   - component: {fileID: 6712627817269816266}
+  - component: {fileID: -5737953294927362001}
   m_Layer: 0
   m_Name: HighResidential3
   m_TagString: Untagged
@@ -228,7 +229,7 @@ MonoBehaviour:
   buildingName: 
   cost: 0
   population: 0
-  size: {x: 2, y: 0, z: 2}
+  size: {x: 2, y: 2, z: 2}
   buildingType: 0
   level: 2
   hasArea: 0
@@ -244,10 +245,12 @@ MonoBehaviour:
   middleMesh: {fileID: 0}
   richMesh: {fileID: 0}
   happinessEffect: 0
-  buildPrice: 100
-  populationCapacity: 0
+  baseHappiness: 70
+  currentHappiness: 70
+  buildPrice: 1500
+  populationCapacity: 100
   currentPopulation: 0
-  incomePerTick: 0
+  incomePerTick: 110
   placedTile: {fileID: 0}
   manager: {fileID: 0}
   occupiedTiles: []
@@ -272,3 +275,40 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-5737953294927362001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8940358926646969969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aead61aea08fe134c9c065fd31e8634c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeshScaleAnimator
+  duration: 0.35
+  curve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4

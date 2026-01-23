@@ -77,7 +77,7 @@ public class UIManager : MonoBehaviour
     }
 
     // ===== HELPER =====
-    void HideAllCategoryPanels()
+    public void HideAllCategoryPanels()
     {
         roadPanel.SetActive(false);
         residentPanel.SetActive(false);
@@ -87,4 +87,5 @@ public class UIManager : MonoBehaviour
         waterPanel.SetActive(false);
         parkPanel.SetActive(false);
     }
+
 }

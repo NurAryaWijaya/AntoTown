@@ -18,7 +18,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6382333924264214037
 Transform:
   m_ObjectHideFlags: 0
@@ -143,6 +143,7 @@ Transform:
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 4750143563126962145}
+  - {fileID: 3708952176283118248}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6361854371072149794
@@ -169,8 +170,40 @@ MonoBehaviour:
   arriveDistance: 0.05
   currentTile: {fileID: 0}
   previousTile: {fileID: 0}
-  vehicleVisual: {fileID: 4750143563126962145}
+  vehicleVisual: {fileID: 3708952176283118248}
   rotationSpeed: 20
+--- !u!1 &4049590346465947666
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3708952176283118248}
+  m_Layer: 0
+  m_Name: CarPickupLow.001
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3708952176283118248
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4049590346465947666}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 116153034454756170}
+  m_Father: {fileID: 219302942772977312}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8612164880849276349
 GameObject:
   m_ObjectHideFlags: 0
@@ -189,7 +222,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4750143563126962145
 Transform:
   m_ObjectHideFlags: 0
@@ -285,3 +318,105 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &8953298360381166144
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 116153034454756170}
+  - component: {fileID: 7101432007868069260}
+  - component: {fileID: 6354489146970415184}
+  m_Layer: 0
+  m_Name: CarStationPickupLow.001
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &116153034454756170
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8953298360381166144}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.5, y: -0.5, z: -0.5, w: 0.5}
+  m_LocalPosition: {x: 0, y: 0, z: 0.301}
+  m_LocalScale: {x: 15, y: 15, z: 15}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 3708952176283118248}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: -90}
+--- !u!33 &7101432007868069260
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8953298360381166144}
+  m_Mesh: {fileID: -8447396757345499672, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+--- !u!23 &6354489146970415184
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8953298360381166144}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 4006777694548202593, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: -1752101520805989617, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: -6573965658647892298, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: 43303219306560730, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: 2627126764950782262, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: -6929825864675424682, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: 1445107272900105709, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: -7151090674241229189, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: 8219858053276982515, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: -2071524619272869074, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: -302062356033521398, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: -8048502047407997041, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: 8966932448725820621, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  - {fileID: 1160664810334303596, guid: 9674e7bf9de5864479300fc101e13446, type: 3}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}

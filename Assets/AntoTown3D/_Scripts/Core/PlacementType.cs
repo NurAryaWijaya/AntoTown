@@ -2,5 +2,6 @@ public enum PlacementType
 {
     None,
     Building,
-    Road
+    Road,
+    Delete
 }

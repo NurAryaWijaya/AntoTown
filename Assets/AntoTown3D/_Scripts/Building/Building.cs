@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -43,6 +43,12 @@ public class Building : MonoBehaviour, IPlaceable
 
     [Header("Happiness")]
     public float happinessEffect = 0f;
+    [Range(0, 100)]
+    public float baseHappiness = 70f;
+
+    [HideInInspector]
+    public float currentHappiness = 70f;
+
     [Header("Economy & Population")]
     public int buildPrice = 100;        // Harga membangun
     public int populationCapacity = 0;  // Kapasitas penduduk (untuk residential)
@@ -61,9 +67,15 @@ public class Building : MonoBehaviour, IPlaceable
         placedTile = tile;
         manager = buildingManager;
 
+        GameManager.Instance.RegisterBuilding(this);
         CheckRoadConnection();
         CheckUtilitiesConnection();
-        ApplyHappinessEffect();
+
+        if (buildingType == BuildingType.Residential)
+        {
+            currentPopulation = populationCapacity;
+        }
+
         meshAnimator = GetComponent<MeshScaleAnimator>();
 
         level = BuildingLevel.Poor;
@@ -76,7 +88,6 @@ public class Building : MonoBehaviour, IPlaceable
             StartCoroutine(meshAnimator.Show(GetCurrentMesh()));
         }
 
-        UpdateWarningMark();
         UpdateWarningMark();
     }
     GameObject GetCurrentMesh()
@@ -238,35 +249,37 @@ public class Building : MonoBehaviour, IPlaceable
         if (meshAnimator != null && newMesh != null)
             yield return meshAnimator.Show(newMesh);
 
-        ApplyHappinessEffect();
+        //ApplyHappinessEffect();
 
         isUpgrading = false;
 
         Debug.Log($"{buildingName} upgraded to {level}");
     }
 
-    public void ApplyHappinessEffect()
+    public float CalculateHappiness(BuildingManager manager)
     {
-        if (!hasArea) return;
+        if (buildingType != BuildingType.Residential)
+            return 0f;
 
-        var affected = manager.GetBuildingsInRadius(this);
+        float result = baseHappiness;
 
-        foreach (var b in affected)
+        var nearby = manager.GetBuildingsInRadius(this);
+
+        foreach (var b in nearby)
         {
-            if (b.buildingType == BuildingType.Residential ||
-                b.buildingType == BuildingType.Commercial)
-            {
-                float effect = buildingType switch
-                {
-                    BuildingType.Park => 10f,
-                    BuildingType.Industry => -5f,
-                    _ => 0f
-                };
+            if (!b.hasArea) continue;
 
-                b.happinessEffect += effect;
-            }
+            result += b.buildingType switch
+            {
+                BuildingType.Park => 20f,
+                BuildingType.Industry => -20f,
+                _ => 0f
+            };
         }
+
+        return Mathf.Clamp(result, 0, 100);
     }
+
 
     public bool IsOperational()
     {
@@ -312,6 +325,26 @@ public class Building : MonoBehaviour, IPlaceable
 
     public void DestroyBuilding()
     {
+        // 1. Unregister dari GameManager
+        GameManager.Instance.UnregisterBuilding(this);
+
+        // 2. Lepaskan tile
+        foreach (var t in occupiedTiles)
+        {
+            t.isOccupied = false;
+            t.currentObject = null;
+        }
+        occupiedTiles.Clear();
+
+        // 3. Remove dari BuildingManager
+        if (manager != null)
+            manager.placedBuildings.Remove(this);
+
+        // 4. Recheck neighbor
+        if (manager != null)
+            manager.RecheckAllBuildings();
+
+        // 5. Visual destroy
         StartCoroutine(DestroySequence());
     }
 
@@ -320,6 +353,14 @@ public class Building : MonoBehaviour, IPlaceable
         var mesh = GetCurrentMesh();
         if (meshAnimator != null && mesh != null)
             yield return meshAnimator.Hide(GetCurrentMesh());
+
+        foreach (var t in occupiedTiles)
+        {
+            t.isOccupied = false;
+            t.currentObject = null;
+        }
+        occupiedTiles.Clear();
+
         Destroy(gameObject);
     }
 
