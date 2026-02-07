@@ -26,6 +26,14 @@ public class GameManager : MonoBehaviour
     public TMP_Text happinessText;
     public TMP_Text incomeText;
 
+    [Header("Workforce")]
+    public int totalJobs;
+    public int jobBalance; // (+ surplus, - demand)
+
+    public TMP_Text jobsText;      // UI
+    public TMP_Text jobBalanceText;
+
+
     List<Building> buildings = new();
 
     void Awake()
@@ -58,12 +66,23 @@ public class GameManager : MonoBehaviour
         incomeTimer += tickInterval;
 
         int pop = 0;
+        int jobs = 0;
         float happinessSum = 0f;
         int residentialCount = 0;
 
         foreach (var b in buildings)
         {
             if (!b.IsOperational()) continue;
+            bool hasFacility = b.HasRequiredFacilities(b.manager);
+
+            if (!hasFacility)
+            {
+                b.efficiency = 0.7f; // atau 0.5f
+            }
+            else
+            {
+                b.efficiency = 1f;
+            }
 
             if (b.buildingType == BuildingType.Residential)
             {
@@ -92,10 +111,20 @@ public class GameManager : MonoBehaviour
                 residentialCount++;
             }
 
-            b.Upgrade(tickInterval);
+            if (b.buildingType == BuildingType.Commercial || b.buildingType == BuildingType.Industry)
+            {
+                jobs += Mathf.RoundToInt(b.jobCapacity * b.efficiency);
+            }
+
+            if (b.manager != null)
+            {
+                b.manager.UpgradeBuildings(tickInterval);
+            }
         }
 
         totalPopulation = pop;
+        totalJobs = jobs;
+        jobBalance = totalJobs - totalPopulation;
 
         happiness = residentialCount > 0
             ? happinessSum / residentialCount
@@ -117,7 +146,7 @@ public class GameManager : MonoBehaviour
         foreach (var b in buildings)
         {
             if (!b.IsOperational()) continue;
-            income += Mathf.RoundToInt(b.incomePerTick);
+            income += Mathf.RoundToInt(b.incomePerTick * b.efficiency);
         }
 
         money += income;
@@ -129,7 +158,17 @@ public class GameManager : MonoBehaviour
         if (moneyText) moneyText.text = $"{money}";
         if (populationText) populationText.text = $"{totalPopulation}";
         if (happinessText) happinessText.text = $"{Mathf.RoundToInt(happiness)}%";
-        if (incomeText) incomeText.text = $"(+{lastIncome}) / 5s";
+        if (incomeText) incomeText.text = $"(+{lastIncome}) / {incomeInterval}s";
+        if (jobsText)
+            jobsText.text = $"{totalJobs}";
+
+        if (jobBalanceText)
+        {
+            if (jobBalance >= 0)
+                jobBalanceText.text = $"+{jobBalance}";
+            else
+                jobBalanceText.text = $"{jobBalance}";
+        }
     }
 
 

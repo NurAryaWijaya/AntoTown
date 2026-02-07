@@ -230,7 +230,7 @@ MonoBehaviour:
   cost: 0
   population: 0
   size: {x: 2, y: 2, z: 2}
-  buildingType: 0
+  buildingType: 1
   level: 2
   hasArea: 0
   areaRadiusInTiles: 0
@@ -240,12 +240,16 @@ MonoBehaviour:
   warningMark: {fileID: 8801025511985684510}
   canUpgrade: 0
   upgradeTimer: 0
-  upgradeInterval: 30
+  poorToMiddleInterval: 300
+  middleToRichInterval: 600
+  nextUpgradeTime: -1
+  facilityUnlocked: 0
   poorMesh: {fileID: 5531024254301928223}
   middleMesh: {fileID: 0}
   richMesh: {fileID: 0}
   happinessEffect: 0
   baseHappiness: 70
+  jobCapacity: 550
   currentHappiness: 70
   buildPrice: 2500
   populationCapacity: 0

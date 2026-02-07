@@ -241,7 +241,8 @@ MonoBehaviour:
   warningMark: {fileID: 7327523760688253571}
   canUpgrade: 0
   upgradeTimer: 0
-  upgradeInterval: 30
+  poorToMiddleInterval: 300
+  middleToRichInterval: 600
   poorMesh: {fileID: 8688647035619428796}
   middleMesh: {fileID: 0}
   richMesh: {fileID: 0}
@@ -251,7 +252,7 @@ MonoBehaviour:
   buildPrice: 1200
   populationCapacity: 65
   currentPopulation: 0
-  incomePerTick: 80
+  incomePerTick: 15
   placedTile: {fileID: 0}
   manager: {fileID: 0}
   occupiedTiles: []

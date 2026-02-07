@@ -240,12 +240,14 @@ MonoBehaviour:
   warningMark: {fileID: 7325349598527672181}
   canUpgrade: 0
   upgradeTimer: 0
-  upgradeInterval: 30
+  poorToMiddleInterval: 300
+  middleToRichInterval: 600
   poorMesh: {fileID: 5739600792634515991}
   middleMesh: {fileID: 0}
   richMesh: {fileID: 0}
   happinessEffect: 0
   baseHappiness: 70
+  jobCapacity: 60
   currentHappiness: 70
   buildPrice: 800
   populationCapacity: 0

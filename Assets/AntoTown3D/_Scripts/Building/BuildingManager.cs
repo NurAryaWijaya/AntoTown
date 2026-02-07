@@ -19,6 +19,7 @@ public class BuildingManager : MonoBehaviour
     float zoneSpawnTimer;
 
     public GridManager gridManager;
+    public static System.Action<Building> OnBuildingPlaced;
 
     void Awake()
     {
@@ -101,43 +102,56 @@ public class BuildingManager : MonoBehaviour
 
     public Building PlaceBuilding(Building prefab, Tile tile)
     {
-        if (!CanPlaceBuilding(tile, prefab)) return null;
+        if (!CanPlaceBuilding(tile, prefab))
+            return null;
 
+        // 💰 CEK & POTONG UANG
+        if (!GameManager.Instance.CanAfford(prefab.buildPrice))
+        {
+            Debug.Log("Uang tidak cukup!");
+            return null;
+        }
+
+        GameManager.Instance.SpendMoney(prefab.buildPrice);
+
+        // 🏗️ SPAWN
         GameObject obj = Instantiate(prefab.gameObject);
 
-        // hitung posisi agar prefab muncul **center dari semua tile** untuk visual
         float offsetX = (prefab.size.x - 1) * 0.5f * gridManager.tileSize;
+
         float offsetZ = (prefab.size.z - 1) * 0.5f * gridManager.tileSize;
+
         Vector3 basePos = gridManager.SnapToTile(tile.transform.position);
         Vector3 worldPos = basePos + new Vector3(offsetX, 0, offsetZ);
+
         obj.transform.position = worldPos;
-
-
-        // scale sesuai size
         obj.transform.localScale = prefab.size;
-
-        Quaternion rot = GetRotationFacingRoad(prefab, tile, worldPos);
-        obj.transform.rotation = rot;
+        obj.transform.rotation = GetRotationFacingRoad(prefab, tile, worldPos);
 
         Building building = obj.GetComponent<Building>();
 
+        // 🧱 OCCUPY TILE
         for (int x = 0; x < prefab.size.x; x++)
         {
             for (int z = 0; z < prefab.size.z; z++)
             {
-                int nx = tile.gridPosition.x + x;
-                int nz = tile.gridPosition.y + z;
+                Tile t = gridTiles[
+                    tile.gridPosition.x + x,
+                    tile.gridPosition.y + z
+                ];
 
-                Tile t = gridTiles[nx, nz];
                 t.isOccupied = true;
                 t.currentObject = obj;
-
                 building.occupiedTiles.Add(t);
             }
         }
 
+        // 🔗 REGISTER
         building.OnPlace(tile, this);
         placedBuildings.Add(building);
+
+        OnBuildingPlaced?.Invoke(building);
+
         return building;
     }
 
@@ -179,12 +193,100 @@ public class BuildingManager : MonoBehaviour
 
     public void UpgradeBuildings(float deltaTime)
     {
+        float now = Time.time;
+
         foreach (var b in placedBuildings)
         {
-            b.Upgrade(deltaTime);
+            float interval = b.GetCurrentUpgradeInterval();
+            if (interval <= 0f) continue;
+
+            bool canUpgradeNow = false;
+
+            if (b.buildingType == BuildingType.Residential)
+            {
+                canUpgradeNow =
+                    IsInFacilityArea(b, BuildingType.School) &&
+                    IsInFacilityArea(b, BuildingType.Hospital);
+            }
+            else if (b.buildingType == BuildingType.Commercial ||
+                     b.buildingType == BuildingType.Industry)
+            {
+                canUpgradeNow =
+                    IsInFacilityArea(b, BuildingType.PoliceStation) &&
+                    IsInFacilityArea(b, BuildingType.FireStation);
+            }
+            else
+            {
+                canUpgradeNow = true;
+            }
+
+            // ❌ fasilitas hilang → RESET TOTAL
+            if (!canUpgradeNow)
+            {
+                b.facilityUnlocked = false;
+                b.nextUpgradeTime = -1f;
+                continue;
+            }
+
+            // ✅ fasilitas BARU TERPENUHI
+            if (!b.facilityUnlocked)
+            {
+                b.facilityUnlocked = true;
+
+                float randomDelay = Random.Range(0f, 5f);
+                b.nextUpgradeTime = now + interval + randomDelay;
+                continue;
+            }
+
+            // ⏰ tunggu waktu upgrade masing-masing
+            if (b.nextUpgradeTime > 0f && now >= b.nextUpgradeTime)
+            {
+                b.Upgrade();
+                b.nextUpgradeTime = -1f; // reset untuk level berikutnya
+                b.facilityUnlocked = false;
+            }
         }
     }
 
+    public bool IsInFacilityArea(Building target, BuildingType facilityType)
+    {
+        foreach (var b in placedBuildings)
+        {
+            if (!b.hasArea) continue;
+
+            if (b.buildingType != facilityType) continue;
+
+            // hitung jarak dari center target ke center fasilitas
+            Vector2 targetPos = target.GetCenterGridPosition();
+            Vector2 facilityPos = b.GetCenterGridPosition();
+            float distSq = Vector2.SqrMagnitude(facilityPos - targetPos);
+
+            if (distSq <= b.areaRadiusInTiles * b.areaRadiusInTiles)
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool HasRequiredFacilities(Building b)
+    {
+        if (b.buildingType == BuildingType.Residential)
+        {
+            return IsInFacilityArea(b, BuildingType.School)
+                && IsInFacilityArea(b, BuildingType.Hospital);
+        }
+
+        if (b.buildingType == BuildingType.Commercial ||
+            b.buildingType == BuildingType.Industry)
+        {
+            return IsInFacilityArea(b, BuildingType.PoliceStation)
+                && IsInFacilityArea(b, BuildingType.FireStation);
+        }
+
+        return true;
+    }
+
+    
     // Area
     public bool HasUtilityForTile(Tile tile)
     {
@@ -235,7 +337,15 @@ public class BuildingManager : MonoBehaviour
         Building building = PlaceBuilding(prefab, tile);
 
         // **Update rotasi ke jalan setelah bangunan terpasang**
+        if (building == null)
+        {
+            Debug.LogWarning("Failed to place building: " + prefab?.name);
+            zoneSpawnTimer = Random.Range(0f, 1f); // reset timer biar tidak stuck
+            return; // jangan lanjut akses transform
+        }
+
         building.transform.rotation = GetRotationFacingRoad(prefab, tile, centerPos);
+
 
         // Update semua building agar neighbor road dikenali
         RecheckAllBuildings();

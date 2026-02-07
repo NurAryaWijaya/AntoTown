@@ -4,7 +4,8 @@ using UnityEngine;
 
 public enum BuildingType
 {
-    Residential, Commercial, Industry, PowerPlant, WaterSource, Park
+    Residential, Commercial, Industry, PowerPlant, WaterSource, Park,
+    School, Hospital, FireStation, PoliceStation
 }
 
 public enum BuildingLevel
@@ -33,8 +34,12 @@ public class Building : MonoBehaviour, IPlaceable
     [Header("Upgrade Settings")]
     public bool canUpgrade = false;
     public float upgradeTimer = 0f; // seconds
-    public float upgradeInterval = 30f; // default 5 minutes
+    public float poorToMiddleInterval = 300f; // 5 menit
+    public float middleToRichInterval = 600f; // 10 menit
     MeshScaleAnimator meshAnimator;
+
+    public float nextUpgradeTime = -1f;
+    public bool facilityUnlocked = false;
 
     [Tooltip("Aktif jika canUpgrade = true")]
     public GameObject poorMesh;
@@ -45,9 +50,19 @@ public class Building : MonoBehaviour, IPlaceable
     public float happinessEffect = 0f;
     [Range(0, 100)]
     public float baseHappiness = 70f;
+    [Header("Workforce")]
+    public int jobCapacity = 0; // hanya dipakai untuk Commercial & Industry
+
+    [Header("Happiness Penalty")]
+    [HideInInspector] public bool happinessPenaltyApplied = false;
+    [HideInInspector] public float happinessPenaltyValue = 30f;
+    [Header("Facility Happiness Penalty")]
+    public float facilityPenalty = -30f;
 
     [HideInInspector]
     public float currentHappiness = 70f;
+    public float efficiency = 1f; // 0–1
+
 
     [Header("Economy & Population")]
     public int buildPrice = 100;        // Harga membangun
@@ -78,7 +93,11 @@ public class Building : MonoBehaviour, IPlaceable
 
         meshAnimator = GetComponent<MeshScaleAnimator>();
 
-        level = BuildingLevel.Poor;
+        if (level != BuildingLevel.Middle && level != BuildingLevel.Rich)
+        {
+            level = BuildingLevel.Poor;
+        }
+
         upgradeTimer = 0f;
 
         UpdateUpgradeVisual();
@@ -210,19 +229,15 @@ public class Building : MonoBehaviour, IPlaceable
         );
     }
 
-    public void Upgrade(float deltaTime)
+    public void Upgrade()
     {
         if (!canUpgrade) return;
         if (isUpgrading) return;
         if (level == BuildingLevel.Rich) return;
 
-        upgradeTimer += deltaTime;
-
-        if (upgradeTimer >= upgradeInterval)
-        {
-            StartCoroutine(UpgradeSequence());
-        }
+        StartCoroutine(UpgradeSequence());
     }
+
 
     IEnumerator UpgradeSequence()
     {
@@ -289,6 +304,15 @@ public class Building : MonoBehaviour, IPlaceable
         {
             return connectedToRoad && connectedToPower && connectedToWater;
         }
+
+        if (buildingType == BuildingType.School ||
+            buildingType == BuildingType.Hospital ||
+            buildingType == BuildingType.FireStation ||
+            buildingType == BuildingType.PoliceStation)
+        {
+            return connectedToRoad;
+        }
+
         return true;
     }
 
@@ -362,6 +386,39 @@ public class Building : MonoBehaviour, IPlaceable
         occupiedTiles.Clear();
 
         Destroy(gameObject);
+    }
+
+    public float GetCurrentUpgradeInterval()
+    {
+        return level switch
+        {
+            BuildingLevel.Poor => poorToMiddleInterval,
+            BuildingLevel.Middle => middleToRichInterval,
+            BuildingLevel.Rich => 0f, // sudah maksimal
+            _ => 0f
+        };
+    }
+
+    public bool HasRequiredFacilities(BuildingManager manager)
+    {
+        if (buildingType == BuildingType.Residential)
+        {
+            if (level == BuildingLevel.Poor) return true;
+
+            return manager.IsInFacilityArea(this, BuildingType.School) &&
+                   manager.IsInFacilityArea(this, BuildingType.Hospital);
+        }
+
+        if (buildingType == BuildingType.Commercial ||
+            buildingType == BuildingType.Industry)
+        {
+            if (level == BuildingLevel.Poor) return true;
+
+            return manager.IsInFacilityArea(this, BuildingType.PoliceStation) &&
+                   manager.IsInFacilityArea(this, BuildingType.FireStation);
+        }
+
+        return true;
     }
 
 }

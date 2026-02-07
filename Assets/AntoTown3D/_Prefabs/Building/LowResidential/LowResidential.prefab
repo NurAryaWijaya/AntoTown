@@ -421,17 +421,21 @@ MonoBehaviour:
   warningMark: {fileID: 7819520941429663708}
   canUpgrade: 1
   upgradeTimer: 0
-  upgradeInterval: 30
+  poorToMiddleInterval: 300
+  middleToRichInterval: 600
+  nextUpgradeTime: -1
+  facilityUnlocked: 0
   poorMesh: {fileID: 2701336557016658498}
   middleMesh: {fileID: 8552020969783700530}
   richMesh: {fileID: 3809438271161503356}
   happinessEffect: 0
   baseHappiness: 70
+  jobCapacity: 0
   currentHappiness: 70
   buildPrice: 300
   populationCapacity: 14
   currentPopulation: 0
-  incomePerTick: 25
+  incomePerTick: 7
   placedTile: {fileID: 0}
   manager: {fileID: 0}
   occupiedTiles: []

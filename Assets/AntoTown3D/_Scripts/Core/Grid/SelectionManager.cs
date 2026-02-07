@@ -29,13 +29,6 @@ public class SelectionManager : MonoBehaviour
     Tile zoneStartTile;
     List<Tile> zonePreviewTiles = new();
 
-    // Prefab references
-    //public Building residentialPrefab;
-    //public Building commercialPrefab;
-    //public Building industryPrefab;
-    //public Building parkPrefab;
-    //public Building powerPlantPrefab;
-    //public Building waterSourcePrefab;
 
     [Header("Area")]
     public Building lowResidential;
@@ -123,6 +116,12 @@ public class SelectionManager : MonoBehaviour
     public Building park5;
     public Building park6;
 
+    [Header("=== MANUAL : FACILITIES ===")]
+    public Building school;
+    public Building hospital;
+    public Building fireStation;
+    public Building policeStation;
+
     bool isDraggingRoad;
     Tile startTile;
     Tile lastPlacedTile;
@@ -134,6 +133,11 @@ public class SelectionManager : MonoBehaviour
     public UnityEngine.UI.Button roadButton;
     public Color roadActiveColor = Color.green;
     public Color roadInactiveColor = Color.white;
+
+    [Header("Bulldozer Button")]
+    public UnityEngine.UI.Button bulldozerButton;
+    public Color bulldozerActiveColor = Color.red;
+    public Color bulldozerInactiveColor = Color.white;
 
 
     void Update()
@@ -272,46 +276,44 @@ public class SelectionManager : MonoBehaviour
     // Road 
     public void ToggleRoadMode()
     {
+        bool newState = !gridManager.roadModeActive;
+        SetRoadMode(newState);
+    }
+
+    public void SetRoadMode(bool active)
+    {
         currentMode = PlacementMode.None;
         ClearZonePreview();
 
-        gridManager.roadModeActive = !gridManager.roadModeActive;
+        gridManager.roadModeActive = active;
 
-        var colors = roadButton.colors;
+        // MATIKAN BULLDOSER kalau Road aktif
+        gridManager.currentPlacementType = active ? PlacementType.Road : PlacementType.None;
+        gridManager.isPlacing = false;
+        currentMode = PlacementMode.None;
+        isDraggingRoad = false;
+        lockedAxis = AxisLock.None;
 
-        if (gridManager.roadModeActive)
-        {
-            gridManager.currentPlacementType = PlacementType.Road;
+        if (gridManager.previewObject != null)
+            Destroy(gridManager.previewObject);
+
+        if (active)
             gridManager.ShowPreview(roadPrefab);
 
-            if (uiManager != null)
-                uiManager.CloseBuildPanel();
-
-            colors.normalColor = roadActiveColor;
-            colors.highlightedColor = roadActiveColor;
-            colors.selectedColor = roadActiveColor;
-        }
-        else
-        {
-            gridManager.currentPlacementType = PlacementType.None;
-            gridManager.isPlacing = false;
-
-            if (gridManager.previewObject != null)
-                Destroy(gridManager.previewObject);
-
-            colors.normalColor = roadInactiveColor;
-            colors.highlightedColor = roadInactiveColor;
-            colors.selectedColor = roadInactiveColor;
-
-            // SAFETY STOP
-            isDraggingRoad = false;
-            lockedAxis = AxisLock.None;
-            placedTiles.Clear();
-        }
-
+        // Update tombol Road
+        var colors = roadButton.colors;
+        colors.normalColor = active ? roadActiveColor : roadInactiveColor;
+        colors.highlightedColor = active ? roadActiveColor : roadInactiveColor;
+        colors.selectedColor = active ? roadActiveColor : roadInactiveColor;
         roadButton.colors = colors;
-    }
 
+        // Update tombol Bulldozer
+        colors = bulldozerButton.colors;
+        colors.normalColor = gridManager.currentPlacementType == PlacementType.Delete ? bulldozerActiveColor : bulldozerInactiveColor;
+        colors.highlightedColor = gridManager.currentPlacementType == PlacementType.Delete ? bulldozerActiveColor : bulldozerInactiveColor;
+        colors.selectedColor = gridManager.currentPlacementType == PlacementType.Delete ? bulldozerActiveColor : bulldozerInactiveColor;
+        bulldozerButton.colors = colors;
+    }
 
     void TryPlaceRoad(Tile tile)
     {
@@ -380,6 +382,45 @@ public class SelectionManager : MonoBehaviour
     }
 
     // Delete
+    public void ToggleBulldozerMode()
+    {
+        bool newState = gridManager.currentPlacementType != PlacementType.Delete;
+        SetBulldozerMode(newState);
+    }
+
+    public void SetBulldozerMode(bool active)
+    {
+        gridManager.currentPlacementType = active ? PlacementType.Delete : PlacementType.None;
+
+        gridManager.isPlacing = false;
+        currentMode = PlacementMode.None;
+        isDraggingRoad = false;
+        lockedAxis = AxisLock.None;
+
+        if (gridManager.previewObject != null)
+        {
+            Destroy(gridManager.previewObject);
+            gridManager.previewObject = null;
+        }
+
+        // MATIKAN ROAD kalau Bulldozer aktif
+        gridManager.roadModeActive = !active ? gridManager.roadModeActive : false;
+
+        // Update tombol
+        var colors = bulldozerButton.colors;
+        colors.normalColor = active ? bulldozerActiveColor : bulldozerInactiveColor;
+        colors.highlightedColor = active ? bulldozerActiveColor : bulldozerInactiveColor;
+        colors.selectedColor = active ? bulldozerActiveColor : bulldozerInactiveColor;
+        bulldozerButton.colors = colors;
+
+        // Update road button warna
+        colors = roadButton.colors;
+        colors.normalColor = gridManager.roadModeActive ? roadActiveColor : roadInactiveColor;
+        colors.highlightedColor = gridManager.roadModeActive ? roadActiveColor : roadInactiveColor;
+        colors.selectedColor = gridManager.roadModeActive ? roadActiveColor : roadInactiveColor;
+        roadButton.colors = colors;
+    }
+
     public void OnDeleteModeClicked()
     {
         gridManager.currentPlacementType = PlacementType.Delete;
@@ -760,5 +801,11 @@ public class SelectionManager : MonoBehaviour
     public void SelectPark4() => SelectBuilding(park4);
     public void SelectPark5() => SelectBuilding(park5);
     public void SelectPark6() => SelectBuilding(park6);
+
+    // Facilities Buttons
+    public void SelectSchool() => SelectBuilding(school);
+    public void SelectHospital() => SelectBuilding(hospital);
+    public void SelectFireStation() => SelectBuilding(fireStation);
+    public void SelectPoliceStation() => SelectBuilding(policeStation);
 
 }

@@ -250,7 +250,7 @@ MonoBehaviour:
   buildPrice: 250
   populationCapacity: 10
   currentPopulation: 0
-  incomePerTick: 20
+  incomePerTick: 5
   placedTile: {fileID: 0}
   manager: {fileID: 0}
   occupiedTiles: []
