@@ -6,7 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/AntoTown3D/_Scenes/Prototype.unity
+    path: Assets/AntoTown3D/_Scenes/MainMenu.unity
+    guid: a59d2091949d60a4c9e2f5147bf7babe
+  - enabled: 1
+    path: Assets/AntoTown3D/_Scenes/GamePlay.unity
     guid: 4903581e30615cd49a2d5a9cdcbe0536
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

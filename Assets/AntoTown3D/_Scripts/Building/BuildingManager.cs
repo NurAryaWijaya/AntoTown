@@ -34,9 +34,9 @@ public class BuildingManager : MonoBehaviour
         StartCoroutine(UpgradeRoutine());
     }
     void Update()
-{
-    ProcessZoneSpawn(Time.deltaTime);
-}
+    {
+        ProcessZoneSpawn(Time.deltaTime);
+    }
 
     IEnumerator UpgradeRoutine()
     {

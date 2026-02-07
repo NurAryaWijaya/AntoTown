@@ -192,4 +192,10 @@ public class GameManager : MonoBehaviour
     {
         buildings.Remove(b);
     }
+
+    public void ForceRecalculate()
+    {
+        Tick(); // atau method khusus tanpa income
+    }
+
 }
