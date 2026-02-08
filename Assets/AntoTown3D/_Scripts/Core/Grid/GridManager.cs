@@ -38,10 +38,10 @@ public class GridManager : MonoBehaviour
     {
         GenerateGrid();
 
-        // Pastikan BuildingManager tahu tiles
         if (buildingManager != null)
             buildingManager.gridTiles = tiles;
     }
+
 
     void Update()
     {

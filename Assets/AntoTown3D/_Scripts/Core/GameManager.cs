@@ -46,10 +46,27 @@ public class GameManager : MonoBehaviour
         Instance = this;
     }
 
+    public bool IsNewGame = false;
+
     void Start()
     {
         UpdateUI();
         StartCoroutine(TickLoop());
+
+        IsNewGame = PlayerPrefs.GetInt("IS_NEW_GAME", 0) == 1;
+
+        if (IsNewGame)
+        {
+            money = 1000;
+            totalPopulation = 0;
+            happiness = 50f;
+            totalJobs = 0;
+            jobBalance = 0;
+            buildings.Clear();
+
+            PlayerPrefs.SetInt("IS_NEW_GAME", 0); // reset flag
+            PlayerPrefs.Save();
+        }
     }
 
     IEnumerator TickLoop()
@@ -153,7 +170,7 @@ public class GameManager : MonoBehaviour
         lastIncome = income;
     }
 
-    void UpdateUI()
+    public void UpdateUI()
     {
         if (moneyText) moneyText.text = $"{money}";
         if (populationText) populationText.text = $"{totalPopulation}";

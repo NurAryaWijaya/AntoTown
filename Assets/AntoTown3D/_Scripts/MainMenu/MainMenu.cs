@@ -24,12 +24,15 @@ public class MainMenu : MonoBehaviour
     // NEW GAME
     public void NewGame()
     {
-        // Kalau mau reset save lama
         PlayerPrefs.SetInt(SAVE_KEY, 1);
+        PlayerPrefs.SetInt("IS_NEW_GAME", 1);
         PlayerPrefs.Save();
+
+        // Set flag supaya GameManager tau ini new game
 
         SceneManager.LoadScene("GamePlay");
     }
+
 
     // LOAD GAME
     public void LoadGame()
@@ -37,8 +40,34 @@ public class MainMenu : MonoBehaviour
         if (PlayerPrefs.GetInt(SAVE_KEY, 0) == 0)
             return;
 
+        PlayerPrefs.SetInt("IS_LOAD_GAME", 1);
+        PlayerPrefs.Save();
+
         SceneManager.LoadScene("GamePlay");
     }
+
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "GamePlay")
+        {
+            BuildingManager buildingManager = GameObject.FindFirstObjectByType<BuildingManager>();
+            GridManager gridManager = GameObject.FindFirstObjectByType<GridManager>();
+
+            if (buildingManager != null && gridManager != null)
+            {
+                SaveSystem.LoadGame(buildingManager, gridManager);
+            }
+            else
+            {
+                Debug.LogWarning("BuildingManager/GridManager tidak ditemukan saat load!");
+            }
+
+            // lepas listener agar tidak dipanggil berkali-kali
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+    }
+
 
     // QUIT GAME
     public void QuitGame()

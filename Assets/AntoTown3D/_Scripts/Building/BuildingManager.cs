@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class BuildingManager : MonoBehaviour
 {
+    public static BuildingManager Instance;
+
     [Header("Prefabs & Grid")]
     public List<Building> buildingPrefabs;
     public List<Building> placedBuildings = new();
@@ -21,8 +23,11 @@ public class BuildingManager : MonoBehaviour
     public GridManager gridManager;
     public static System.Action<Building> OnBuildingPlaced;
 
+    public RoadTile roadLogicPrefab;
+
     void Awake()
     {
+        Instance = this;
         if (gridManager != null)
             gridTiles = gridManager.tiles;
     }
@@ -32,6 +37,12 @@ public class BuildingManager : MonoBehaviour
         if (gridManager != null)
             gridTiles = gridManager.tiles;
         StartCoroutine(UpgradeRoutine());
+
+        // --- Tambahan: load game setelah grid siap ---
+        if (PlayerPrefs.GetInt("HAS_SAVE", 0) == 1 && PlayerPrefs.GetInt("IS_NEW_GAME", 0) == 0)
+        {
+            StartCoroutine(LoadGameAfterGridReady());
+        }
     }
     void Update()
     {
@@ -46,6 +57,19 @@ public class BuildingManager : MonoBehaviour
             yield return null;
         }
     }
+
+    // Coroutine menunggu grid siap sebelum load
+    IEnumerator LoadGameAfterGridReady()
+{
+    // tunggu 1 frame supaya GridManager.GenerateGrid() selesai
+    yield return null;
+
+    GridManager grid = FindFirstObjectByType<GridManager>();
+    SaveSystem.LoadGame(this, grid);
+
+    PlayerPrefs.SetInt("IS_LOAD_GAME", 0);
+    PlayerPrefs.Save();
+}
 
     public Tile[] GetNeighborTiles(Tile tile)
     {
@@ -100,19 +124,22 @@ public class BuildingManager : MonoBehaviour
         return true;
     }
 
-    public Building PlaceBuilding(Building prefab, Tile tile)
+    public Building PlaceBuilding(Building prefab, Tile tile, bool isLoading = false)
     {
-        if (!CanPlaceBuilding(tile, prefab))
+        if (!isLoading && !CanPlaceBuilding(tile, prefab))
             return null;
 
         // 💰 CEK & POTONG UANG
-        if (!GameManager.Instance.CanAfford(prefab.buildPrice))
+        if (!isLoading)
         {
-            Debug.Log("Uang tidak cukup!");
-            return null;
-        }
+            if (!GameManager.Instance.CanAfford(prefab.buildPrice))
+            {
+                Debug.Log("Uang tidak cukup!");
+                return null;
+            }
 
-        GameManager.Instance.SpendMoney(prefab.buildPrice);
+            GameManager.Instance.SpendMoney(prefab.buildPrice);
+        }
 
         // 🏗️ SPAWN
         GameObject obj = Instantiate(prefab.gameObject);

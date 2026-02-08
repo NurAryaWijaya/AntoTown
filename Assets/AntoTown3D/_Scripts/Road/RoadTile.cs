@@ -16,21 +16,34 @@ public class RoadTile : MonoBehaviour, IPlaceable
     public bool connectEast;
     public bool connectSouth;
     public bool connectWest;
+    public bool isLoading = false;
+
 
     public List<RoadTile> connectedRoads = new List<RoadTile>();
 
     private Tile ownerTile;
+    public Tile OwnerTile => ownerTile;
     void Awake()
     {
         visualRoot = transform.Find("VisualRoot");
+
+        if (visualRoot == null)
+        {
+            Debug.LogError($"[RoadTile] VisualRoot NOT FOUND on {name}");
+        }
     }
+
 
     // PLACEMENT CALLBACK
     public void OnPlaced(Tile tile, GridManager grid)
     {
         ownerTile = tile;
-        DetectNeighbors(grid);
-        UpdateJunctionType();
+
+        if (!isLoading)
+        {
+            DetectNeighbors(grid);
+            UpdateJunctionType();
+        }
     }
 
     public void OnRemoved(Tile tile, GridManager grid)
@@ -146,6 +159,11 @@ public class RoadTile : MonoBehaviour, IPlaceable
     {
         if (currentVisual != null)
             Destroy(currentVisual);
+        if (visualRoot == null)
+        {
+            Debug.LogError($"[RoadTile] visualRoot NULL on {name}");
+            return;
+        }
 
         GameObject prefab = junctionType switch
         {
@@ -168,7 +186,6 @@ public class RoadTile : MonoBehaviour, IPlaceable
     void UpdateRotation()
     {
         if (currentVisual == null) return;
-
         float rotY = 0f;
 
         if (junctionType == JunctionType.End)
@@ -203,6 +220,16 @@ public class RoadTile : MonoBehaviour, IPlaceable
 
         currentVisual.transform.localRotation = Quaternion.Euler(0, rotY, 0);
     }
+
+    public void RefreshAfterLoad(GridManager grid)
+    {
+        connectedRoads.Clear();
+        connectNorth = connectEast = connectSouth = connectWest = false;
+
+        DetectNeighbors(grid);
+        UpdateJunctionType();
+    }
+
 
 }
 

@@ -44,10 +44,22 @@ public class GameExitMenu : MonoBehaviour
 
     void SaveGame()
     {
-        // Placeholder save
-        PlayerPrefs.SetInt(SAVE_KEY, 1);
-        PlayerPrefs.Save();
+        // Pastikan ada reference ke BuildingManager & GridManager
+        BuildingManager buildingManager = GameObject.FindFirstObjectByType<BuildingManager>();
+        GridManager gridManager = GameObject.FindFirstObjectByType<GridManager>();
 
-        Debug.Log("Game saved!");
+        if (buildingManager != null && gridManager != null)
+        {
+            SaveSystem.SaveGame(); // simpan semua
+            PlayerPrefs.SetInt(SAVE_KEY, 1); // flag save ada
+            PlayerPrefs.Save();
+            Debug.Log("Game saved!");
+        }
+        else
+        {
+            Debug.LogWarning("BuildingManager/GridManager tidak ditemukan!");
+        }
     }
+
+
 }
