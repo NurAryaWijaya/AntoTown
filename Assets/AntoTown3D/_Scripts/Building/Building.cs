@@ -13,12 +13,20 @@ public enum BuildingLevel
     Poor, Middle, Rich
 }
 
+public enum ZoneTier
+{
+    Low,
+    High
+}
+
+
 public class Building : MonoBehaviour, IPlaceable
 {
     [Header("Basic Info")]
     public string buildingName;
     public int cost;
     public int population;
+    public Vector2Int anchorTile; // posisi tile kiri-bawah
     public Vector3 size;
     public BuildingType buildingType;
     public BuildingLevel level = BuildingLevel.Poor;
@@ -63,6 +71,8 @@ public class Building : MonoBehaviour, IPlaceable
     public float currentHappiness = 70f;
     public float efficiency = 1f; // 0–1
 
+    [Header("Zone Info")]
+    public ZoneTier zoneTier;
 
     [Header("Economy & Population")]
     public int buildPrice = 100;        // Harga membangun
@@ -75,7 +85,6 @@ public class Building : MonoBehaviour, IPlaceable
     [HideInInspector] public List<Tile> occupiedTiles = new();
 
     bool isUpgrading = false;
-
 
     public void OnPlace(Tile tile, BuildingManager buildingManager)
     {
@@ -223,10 +232,6 @@ public class Building : MonoBehaviour, IPlaceable
         }
 
         warningMark.SetActive(shouldShow);
-
-        Debug.Log(
-            $"{buildingName} | Road:{connectedToRoad} Power:{connectedToPower} Water:{connectedToWater} Warning:{shouldShow}"
-        );
     }
 
     public void Upgrade()

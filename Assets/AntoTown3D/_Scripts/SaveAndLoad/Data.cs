@@ -16,11 +16,12 @@ public class BuildingData
 {
     public string buildingName;
     public string prefabName;
-    public Vector3 position;
+    public Vector2Int anchorTile;
     public Vector3 size;
     public BuildingType buildingType;
     public BuildingLevel level;
     public bool canUpgrade;
+    public ZoneTier zoneTier;
     public float upgradeTimer;
     public int currentPopulation;
     public float incomePerTick;

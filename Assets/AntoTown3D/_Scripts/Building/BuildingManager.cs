@@ -60,16 +60,16 @@ public class BuildingManager : MonoBehaviour
 
     // Coroutine menunggu grid siap sebelum load
     IEnumerator LoadGameAfterGridReady()
-{
-    // tunggu 1 frame supaya GridManager.GenerateGrid() selesai
-    yield return null;
+    {
+        // tunggu 1 frame supaya GridManager.GenerateGrid() selesai
+        yield return null;
 
-    GridManager grid = FindFirstObjectByType<GridManager>();
-    SaveSystem.LoadGame(this, grid);
+        GridManager grid = FindFirstObjectByType<GridManager>();
+        SaveSystem.LoadGame(this, grid);
 
-    PlayerPrefs.SetInt("IS_LOAD_GAME", 0);
-    PlayerPrefs.Save();
-}
+        PlayerPrefs.SetInt("IS_LOAD_GAME", 0);
+        PlayerPrefs.Save();
+    }
 
     public Tile[] GetNeighborTiles(Tile tile)
     {
@@ -148,14 +148,18 @@ public class BuildingManager : MonoBehaviour
 
         float offsetZ = (prefab.size.z - 1) * 0.5f * gridManager.tileSize;
 
-        Vector3 basePos = gridManager.SnapToTile(tile.transform.position);
-        Vector3 worldPos = basePos + new Vector3(offsetX, 0, offsetZ);
+        Vector2Int anchor = tile.gridPosition;
+
+        // hitung world position dari anchor + size
+        Vector3 worldPos = gridManager.GetWorldPositionFromAnchor(anchor, prefab.size);
 
         obj.transform.position = worldPos;
+
         obj.transform.localScale = prefab.size;
         obj.transform.rotation = GetRotationFacingRoad(prefab, tile, worldPos);
 
         Building building = obj.GetComponent<Building>();
+        building.anchorTile = anchor;
 
         // 🧱 OCCUPY TILE
         for (int x = 0; x < prefab.size.x; x++)

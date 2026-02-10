@@ -250,7 +250,12 @@ MonoBehaviour:
   happinessEffect: 0
   baseHappiness: 70
   jobCapacity: 350
+  happinessPenaltyApplied: 0
+  happinessPenaltyValue: 30
+  facilityPenalty: -30
   currentHappiness: 70
+  efficiency: 1
+  zoneTier: 1
   buildPrice: 1500
   populationCapacity: 0
   currentPopulation: 0

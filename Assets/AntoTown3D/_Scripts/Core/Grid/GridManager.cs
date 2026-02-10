@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.UIElements;
 
 public class GridManager : MonoBehaviour
 {
@@ -33,6 +33,27 @@ public class GridManager : MonoBehaviour
     List<Tile> highlightedTiles = new();
     List<Tile> areaHighlightedTiles = new();
 
+    //Pointer
+    bool PointerPressedThisFrame()
+    {
+        return Pointer.current != null &&
+               Pointer.current.press.wasPressedThisFrame;
+    }
+
+    bool IsPointerOverUI()
+    {
+        return EventSystem.current != null &&
+               Pointer.current != null &&
+               EventSystem.current.IsPointerOverGameObject(Pointer.current.deviceId);
+    }
+
+    Vector2 PointerPosition()
+    {
+        return Pointer.current != null
+            ? Pointer.current.position.ReadValue()
+            : Vector2.zero;
+    }
+
 
     void Start()
     {
@@ -45,16 +66,22 @@ public class GridManager : MonoBehaviour
 
     void Update()
     {
+        if (IsPointerOverUI())
+            return;
+
         if (isPlacing)
         {
-            MovePreviewToMouse();
+            MovePreviewToPointer();
             return;
         }
 
         // mode normal (klik bangunan untuk lihat area)
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (PointerPressedThisFrame())
         {
-            Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+            Vector2 screenPos = PointerPosition();
+            if (screenPos == Vector2.zero) return;
+
+            Ray ray = Camera.main.ScreenPointToRay(screenPos);
             if (Physics.Raycast(ray, out RaycastHit hit, 100f))
             {
                 Building building = hit.collider.GetComponentInParent<Building>();
@@ -109,11 +136,15 @@ public class GridManager : MonoBehaviour
         return pos;
     }
 
-    public void MovePreviewToMouse()
+    public void MovePreviewToPointer()
     {
         if (!isPlacing || previewObject == null) return;
 
-        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Vector2 screenPos = PointerPosition();
+        if (screenPos == Vector2.zero) return;
+
+        Ray ray = Camera.main.ScreenPointToRay(screenPos);
+
         if (!Physics.Raycast(ray, out RaycastHit hit, 100f, LayerMask.GetMask("Tile")))
         {
             ClearHighlightedTiles();
@@ -360,6 +391,16 @@ public class GridManager : MonoBehaviour
     {
         if (!highlightedTiles.Contains(tile))
             highlightedTiles.Add(tile);
+    }
+
+    public Vector3 GetWorldPositionFromAnchor(Vector2Int anchor, Vector3 size)
+    {
+        Tile anchorTile = tiles[anchor.x, anchor.y];
+
+        float offsetX = (size.x - 1) * tileSize * 0.5f;
+        float offsetZ = (size.z - 1) * tileSize * 0.5f;
+
+        return anchorTile.transform.position + new Vector3(offsetX, 0, offsetZ);
     }
 
     #endregion

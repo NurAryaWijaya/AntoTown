@@ -14,6 +14,7 @@ public enum PlacementMode
 }
 
 
+
 public class SelectionManager : MonoBehaviour
 {
     public GridManager gridManager;
@@ -21,7 +22,10 @@ public class SelectionManager : MonoBehaviour
     public GameObject buildingPrefab;
     public GameObject roadPrefab;
     public UIManager uiManager;
+    public CameraController cameraController;
 
+    public static SelectionManager Instance;
+    public bool IsPlacing => gridManager != null && gridManager.isPlacing;
 
     // Area
     public PlacementMode currentMode;
@@ -139,17 +143,80 @@ public class SelectionManager : MonoBehaviour
     public Color bulldozerActiveColor = Color.red;
     public Color bulldozerInactiveColor = Color.white;
 
+    // Pointer
+    bool PointerPressedThisFrame()
+    {
+        return Pointer.current != null && Pointer.current.press.wasPressedThisFrame;
+    }
+
+    bool PointerReleasedThisFrame()
+    {
+        return Pointer.current != null && Pointer.current.press.wasReleasedThisFrame;
+    }
+
+    bool PointerIsPressed()
+    {
+        return Pointer.current != null && Pointer.current.press.isPressed;
+    }
+
+    Vector2 PointerPosition()
+    {
+        return Pointer.current != null
+            ? Pointer.current.position.ReadValue()
+            : Vector2.zero;
+    }
+
+    bool IsPointerOverUI()
+    {
+        return EventSystem.current != null &&
+               Pointer.current != null &&
+               EventSystem.current.IsPointerOverGameObject(Pointer.current.deviceId);
+    }
+
+    void LockCamera(bool locked)
+    {
+        if (cameraController != null)
+        {
+            cameraController.allowDrag = !locked;
+        }
+    }
+
+    void LockCameraForPlacement()
+    {
+        if (cameraController != null)
+            cameraController.allowDrag = false;
+    }
+
+    void UnlockCamera()
+    {
+        if (cameraController != null)
+            cameraController.allowDrag = true;
+    }
+
+    bool IsInPlacementMode()
+    {
+        return gridManager.isPlacing ||
+               gridManager.currentPlacementType != PlacementType.None ||
+               currentMode != PlacementMode.None;
+    }
+
+    void Awake()
+    {
+        Instance = this;
+    }
+
 
     void Update()
     {
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        if (IsPointerOverUI() && IsInPlacementMode())
             return;
 
+
         bool isZoneMode =
-    currentMode == PlacementMode.LowResidentialZone ||
-    currentMode == PlacementMode.HighResidentialZone ||
-    currentMode == PlacementMode.LowCommercialZone || 
-    currentMode == PlacementMode.HighCommercialZone;
+        currentMode == PlacementMode.LowResidentialZone ||
+        currentMode == PlacementMode.HighResidentialZone ||
+        currentMode == PlacementMode.LowCommercialZone || 
+        currentMode == PlacementMode.HighCommercialZone;
 
         bool isDeleteMode = gridManager.currentPlacementType == PlacementType.Delete;
 
@@ -163,10 +230,11 @@ public class SelectionManager : MonoBehaviour
 
         if (!isZoneMode)
         {
-            gridManager.MovePreviewToMouse();
+            gridManager.MovePreviewToPointer();
         }
 
-        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+        //Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+        Ray ray = Camera.main.ScreenPointToRay(PointerPosition());
         if (!Physics.Raycast(ray, out RaycastHit hit, 200f, LayerMask.GetMask("Tile")))
             return;
 
@@ -186,8 +254,8 @@ public class SelectionManager : MonoBehaviour
 
         // Ini menyembunyikan area bangunan
         if (currentMode == PlacementMode.None &&
-    gridManager.currentPlacementType != PlacementType.Delete &&
-    Mouse.current.leftButton.wasPressedThisFrame)
+            gridManager.currentPlacementType != PlacementType.Delete &&
+            PointerPressedThisFrame())
         {
             if (hit.collider.GetComponent<Building>() == null)
             {
@@ -206,7 +274,7 @@ public class SelectionManager : MonoBehaviour
         if (gridManager.currentPlacementType == PlacementType.Road)
         {
             // FORCE STOP (ANTI BUG)
-            if (isDraggingRoad && !Mouse.current.leftButton.isPressed)
+            if (isDraggingRoad && !PointerIsPressed())
             {
                 isDraggingRoad = false;
                 lockedAxis = AxisLock.None;
@@ -214,7 +282,7 @@ public class SelectionManager : MonoBehaviour
             }
 
             // START DRAG
-            if (Mouse.current.leftButton.wasPressedThisFrame)
+            if (PointerPressedThisFrame())
             {
                 isDraggingRoad = true;
                 startTile = tile;
@@ -242,16 +310,16 @@ public class SelectionManager : MonoBehaviour
 
         // ZONE MODE
         if (currentMode == PlacementMode.LowResidentialZone ||
-    currentMode == PlacementMode.HighResidentialZone ||
-    currentMode == PlacementMode.LowCommercialZone ||
-    currentMode == PlacementMode.HighCommercialZone)
+            currentMode == PlacementMode.HighResidentialZone ||
+            currentMode == PlacementMode.LowCommercialZone ||
+            currentMode == PlacementMode.HighCommercialZone)
         {
             HandleZonePlacement(tile);
             return;
         }
 
         // BUILDING MODE
-        if (gridManager.currentPlacementType == PlacementType.Building && Mouse.current.leftButton.wasPressedThisFrame)
+        if (gridManager.currentPlacementType == PlacementType.Building && PointerPressedThisFrame())
         {
             Building buildingPrefab = gridManager.currentPrefab.GetComponent<Building>();
             if (buildingPrefab != null)
@@ -266,8 +334,14 @@ public class SelectionManager : MonoBehaviour
 
                 // Hentikan placing mode
                 gridManager.isPlacing = false;
+
                 if (gridManager.previewObject != null)
                     Destroy(gridManager.previewObject);
+
+                LockCamera(false);
+
+                gridManager.currentPlacementType = PlacementType.None;
+                currentMode = PlacementMode.None;
             }
         }
 
@@ -313,6 +387,8 @@ public class SelectionManager : MonoBehaviour
         colors.highlightedColor = gridManager.currentPlacementType == PlacementType.Delete ? bulldozerActiveColor : bulldozerInactiveColor;
         colors.selectedColor = gridManager.currentPlacementType == PlacementType.Delete ? bulldozerActiveColor : bulldozerInactiveColor;
         bulldozerButton.colors = colors;
+
+        LockCamera(active);
     }
 
     void TryPlaceRoad(Tile tile)
@@ -379,6 +455,9 @@ public class SelectionManager : MonoBehaviour
 
         gridManager.currentPlacementType = PlacementType.Building;
         gridManager.ShowPreview(prefab.gameObject);
+
+        UnlockCamera();
+        LockCameraForPlacement();
     }
 
     // Delete
@@ -419,6 +498,8 @@ public class SelectionManager : MonoBehaviour
         colors.highlightedColor = gridManager.roadModeActive ? roadActiveColor : roadInactiveColor;
         colors.selectedColor = gridManager.roadModeActive ? roadActiveColor : roadInactiveColor;
         roadButton.colors = colors;
+
+        LockCamera(active);
     }
 
     public void OnDeleteModeClicked()
@@ -432,7 +513,7 @@ public class SelectionManager : MonoBehaviour
         if (gridManager.previewObject != null)
             Destroy(gridManager.previewObject);
 
-        Debug.Log("DELETE MODE ACTIVE");
+        LockCamera(true); // 🔒 WAJIB
     }
 
     void HandleDeleteMode(Tile tile)
@@ -446,7 +527,7 @@ public class SelectionManager : MonoBehaviour
         tile.SetColor(Color.red);
         gridManager.RegisterHighlightedTile(tile);
 
-        if (!Mouse.current.leftButton.wasPressedThisFrame)
+        if (!PointerPressedThisFrame())
             return;
 
         GameObject target = tile.currentObject;
@@ -493,7 +574,7 @@ public class SelectionManager : MonoBehaviour
     void HandleZonePlacement(Tile tile)
     {
         // START DRAG
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (PointerPressedThisFrame())
         {
             isDraggingZone = true;
             zoneStartTile = tile;
@@ -501,13 +582,13 @@ public class SelectionManager : MonoBehaviour
         }
 
         // DRAG
-        if (isDraggingZone && Mouse.current.leftButton.isPressed)
+        if (isDraggingZone && PointerIsPressed())
         {
             UpdateZonePreview(zoneStartTile, tile);
         }
 
         // RELEASE
-        if (isDraggingZone && Mouse.current.leftButton.wasReleasedThisFrame)
+        if (isDraggingZone && PointerReleasedThisFrame())
         {
             ConfirmZonePlacement();
             ClearZonePreview();
@@ -576,6 +657,7 @@ public class SelectionManager : MonoBehaviour
         }
 
         currentMode = PlacementMode.None;
+        UnlockCamera();
     }
 
 
@@ -601,131 +683,54 @@ public class SelectionManager : MonoBehaviour
 
     public void SelectLowResidentialZone()
     {
-        // ❗ KELUAR DARI ZONE MODE
-        currentMode = PlacementMode.None;
-        ClearZonePreview();
-        // Turn off road mode
-        gridManager.roadModeActive = false;
-
-        // Reset warna tombol road ke default/nonaktif
-        var colors = roadButton.colors;
-        colors.normalColor = roadInactiveColor;
-        colors.highlightedColor = roadInactiveColor;
-        colors.selectedColor = roadInactiveColor;
-        roadButton.colors = colors;
-
-        // Safety reset
-        isDraggingRoad = false;
-        lockedAxis = AxisLock.None;
-
-        if (uiManager != null)
-            uiManager.CloseBuildPanel();
-
-        currentMode = PlacementMode.LowResidentialZone;
-
-        gridManager.roadModeActive = false;
-        gridManager.currentPlacementType = PlacementType.None;
-
-        if (gridManager.previewObject != null)
-            Destroy(gridManager.previewObject);
+        EnterZoneMode(PlacementMode.LowResidentialZone);
     }
 
     public void SelectHighResidentialZone()
     {
-        // ❗ KELUAR DARI ZONE MODE
-        currentMode = PlacementMode.None;
-        ClearZonePreview();
-        // Turn off road mode
-        gridManager.roadModeActive = false;
-
-        // Reset warna tombol road ke default/nonaktif
-        var colors = roadButton.colors;
-        colors.normalColor = roadInactiveColor;
-        colors.highlightedColor = roadInactiveColor;
-        colors.selectedColor = roadInactiveColor;
-        roadButton.colors = colors;
-
-        // Safety reset
-        isDraggingRoad = false;
-        lockedAxis = AxisLock.None;
-
-        if (uiManager != null)
-            uiManager.CloseBuildPanel();
-
-        currentMode = PlacementMode.HighResidentialZone;
-
-        gridManager.roadModeActive = false;
-        gridManager.currentPlacementType = PlacementType.None;
-
-        if (gridManager.previewObject != null)
-            Destroy(gridManager.previewObject);
+        EnterZoneMode(PlacementMode.HighResidentialZone);
     }
     public void SelectLowCommercial()
     {
-        // ❗ KELUAR DARI ZONE MODE
-        currentMode = PlacementMode.None;
-        ClearZonePreview();
-        // Turn off road mode
-        gridManager.roadModeActive = false;
-
-        // Reset warna tombol road ke default/nonaktif
-        var colors = roadButton.colors;
-        colors.normalColor = roadInactiveColor;
-        colors.highlightedColor = roadInactiveColor;
-        colors.selectedColor = roadInactiveColor;
-        roadButton.colors = colors;
-
-        // Safety reset
-        isDraggingRoad = false;
-        lockedAxis = AxisLock.None;
-
-        if (uiManager != null)
-            uiManager.CloseBuildPanel();
-
-        currentMode = PlacementMode.LowCommercialZone;
-
-        gridManager.roadModeActive = false;
-        gridManager.currentPlacementType = PlacementType.None;
-
-        if (gridManager.previewObject != null)
-            Destroy(gridManager.previewObject);
+        EnterZoneMode(PlacementMode.LowCommercialZone);
     }
     public void SelectHighCommercial()
     {
-        // ❗ KELUAR DARI ZONE MODE
+        EnterZoneMode(PlacementMode.HighCommercialZone);
+    }
+
+    void EnterZoneMode(PlacementMode mode)
+    {
         currentMode = PlacementMode.None;
         ClearZonePreview();
-        // Turn off road mode
-        gridManager.roadModeActive = false;
-
-        // Reset warna tombol road ke default/nonaktif
-        var colors = roadButton.colors;
-        colors.normalColor = roadInactiveColor;
-        colors.highlightedColor = roadInactiveColor;
-        colors.selectedColor = roadInactiveColor;
-        roadButton.colors = colors;
-
-        // Safety reset
-        isDraggingRoad = false;
-        lockedAxis = AxisLock.None;
-
-        if (uiManager != null)
-            uiManager.CloseBuildPanel();
-
-        currentMode = PlacementMode.HighCommercialZone;
 
         gridManager.roadModeActive = false;
         gridManager.currentPlacementType = PlacementType.None;
 
+        isDraggingRoad = false;
+        lockedAxis = AxisLock.None;
+
         if (gridManager.previewObject != null)
             Destroy(gridManager.previewObject);
+
+        if (uiManager != null)
+            uiManager.CloseBuildPanel();
+
+        currentMode = mode;
+        LockCamera(true);
     }
 
     public void ExitZoneMode()
     {
         currentMode = PlacementMode.None;
         ClearZonePreview();
+
+        isDraggingZone = false;
+        gridManager.currentPlacementType = PlacementType.None;
+
+        UnlockCamera();
     }
+
 
     // Button
     public void SelectMediumHouse1() => SelectBuilding(mediumHouse1);

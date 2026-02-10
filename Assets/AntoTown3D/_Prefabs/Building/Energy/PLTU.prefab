@@ -229,6 +229,7 @@ MonoBehaviour:
   buildingName: 
   cost: 0
   population: 0
+  anchorTile: {x: 0, y: 0}
   size: {x: 4, y: 4, z: 4}
   buildingType: 3
   level: 0
@@ -255,6 +256,7 @@ MonoBehaviour:
   facilityPenalty: -30
   currentHappiness: 70
   efficiency: 1
+  zoneTier: 1
   buildPrice: 1600
   populationCapacity: 0
   currentPopulation: 0

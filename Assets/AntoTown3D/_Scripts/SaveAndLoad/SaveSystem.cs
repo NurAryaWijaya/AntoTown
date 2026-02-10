@@ -4,6 +4,27 @@ using UnityEngine;
 public static class SaveSystem
 {
     private static string saveFilePath => Path.Combine(Application.persistentDataPath, "save.json");
+    static bool IsUtility(BuildingType type)
+    {
+        return type == BuildingType.PowerPlant
+            || type == BuildingType.WaterSource;
+    }
+
+    static bool IsFacility(BuildingType type)
+    {
+        return type == BuildingType.School
+            || type == BuildingType.Hospital
+            || type == BuildingType.FireStation
+            || type == BuildingType.PoliceStation
+            || type == BuildingType.Park;
+    }
+
+    static bool IsZoned(BuildingType type)
+    {
+        return type == BuildingType.Residential
+            || type == BuildingType.Commercial
+            || type == BuildingType.Industry;
+    }
 
     public static void SaveGame()
     {
@@ -19,11 +40,12 @@ public static class SaveSystem
             {
                 buildingName = b.buildingName,
                 prefabName = b.name.Replace("(Clone)", ""),
-                position = b.transform.position,
+                anchorTile = b.anchorTile,
                 size = b.size,
                 buildingType = b.buildingType,
                 level = b.level,
                 canUpgrade = b.canUpgrade,
+                zoneTier = b.zoneTier,
                 upgradeTimer = b.upgradeTimer,
                 currentPopulation = b.currentPopulation,
                 incomePerTick = b.incomePerTick,
@@ -109,17 +131,25 @@ public static class SaveSystem
         }
 
         // 3. Restore buildings
+        // 1️⃣ Utility
         foreach (var bd in data.buildings)
         {
-            Building prefab = buildingManager.buildingPrefabs.Find(p => p.name == bd.prefabName);
-            if (prefab != null)
-            {
-                Building b = buildingManager.PlaceBuilding(prefab, gridManager.GetTileAtPosition(bd.position), isLoading: true);
-                b.level = bd.level;
-                b.currentPopulation = bd.currentPopulation;
-                b.upgradeTimer = bd.upgradeTimer;
-                // restore other fields kalau perlu
-            }
+            if (IsUtility(bd.buildingType))
+                SpawnBuilding(bd, buildingManager, gridManager);
+        }
+
+        // 2️⃣ Facility
+        foreach (var bd in data.buildings)
+        {
+            if (IsFacility(bd.buildingType))
+                SpawnBuilding(bd, buildingManager, gridManager);
+        }
+
+        // 3️⃣ Zoned (PALING AKHIR)
+        foreach (var bd in data.buildings)
+        {
+            if (IsZoned(bd.buildingType))
+                SpawnBuilding(bd, buildingManager, gridManager);
         }
 
         // 2. Restore money
@@ -128,4 +158,45 @@ public static class SaveSystem
 
         Debug.Log("Game Loaded!");
     }
+
+    static void SpawnBuilding( BuildingData bd, BuildingManager buildingManager, GridManager gridManager )
+    {
+        Building prefab = buildingManager.buildingPrefabs.Find(p =>
+            p.buildingType == bd.buildingType &&
+            p.zoneTier == bd.zoneTier &&
+            p.level == bd.level
+        );
+
+        if (prefab == null)
+        {
+            Debug.LogWarning($"Prefab tidak ditemukan: {bd.buildingType}");
+            return;
+        }
+
+        Vector2Int pos = bd.anchorTile;
+        if (pos.x < 0 || pos.x >= gridManager.width || pos.y < 0 || pos.y >= gridManager.height)
+            return;
+
+        Tile anchorTile = gridManager.tiles[
+            bd.anchorTile.x,
+            bd.anchorTile.y
+        ];
+
+        if (anchorTile.isOccupied)
+            return;
+
+        Building b = buildingManager.PlaceBuilding(
+            prefab,
+            anchorTile,
+            isLoading: true
+        );
+
+        if (b == null) return;
+
+        b.level = bd.level;
+        b.currentPopulation = bd.currentPopulation;
+        b.upgradeTimer = bd.upgradeTimer;
+    }
+
 }
+
