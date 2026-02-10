@@ -5,7 +5,7 @@ public class CameraController : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 20f;
-    public float dragSpeed = 1.5f;
+    public float dragSpeed = 1f;
     public float boostMultiplier = 2f;
 
     [Header("Zoom")]
@@ -65,7 +65,6 @@ public class CameraController : MonoBehaviour
                 Vector2 currentPos = touch.position.ReadValue();
                 Vector2 delta = currentPos - lastTouchPos;
 
-                // 🚫 kalau belum melewati threshold → jangan gerakkan kamera
                 if (!hasExceededThreshold)
                 {
                     if (delta.magnitude < dragThreshold)
@@ -76,10 +75,7 @@ public class CameraController : MonoBehaviour
 
                 lastTouchPos = currentPos;
 
-                Vector3 move = new Vector3(-delta.x, 0, -delta.y)
-                               * finalSpeed * Time.deltaTime;
-
-                transform.Translate(move, Space.Self);
+                DragMove(delta, finalSpeed);
                 return;
             }
 
@@ -95,16 +91,24 @@ public class CameraController : MonoBehaviour
         {
             Vector2 delta = Mouse.current.delta.ReadValue();
 
-            // 🚫 klik kecil tidak menggeser kamera
             if (delta.magnitude < dragThreshold)
                 return;
 
-            Vector3 move = new Vector3(-delta.x, 0, -delta.y)
-                           * finalSpeed * Time.deltaTime;
-
-            transform.Translate(move, Space.Self);
+            DragMove(delta, finalSpeed);
         }
 #endif
+    }
+
+    void DragMove(Vector2 delta, float speed)
+    {
+        Vector3 right = cameraTransform.right;
+        Vector3 forward = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up).normalized;
+
+        Vector3 move =
+            (-right * delta.x + -forward * delta.y)
+            * speed * Time.deltaTime;
+
+        transform.position += move;
     }
 
     // ================= ZOOM =================
@@ -147,12 +151,17 @@ public class CameraController : MonoBehaviour
 
     void ApplyZoom(float amount)
     {
-        Vector3 pos = cameraTransform.localPosition;
-        pos.y -= amount * zoomSpeed;
-        pos.y = Mathf.Clamp(pos.y, minZoom, maxZoom);
-        cameraTransform.localPosition = pos;
-    }
+        Vector3 dir = cameraTransform.forward;
+        Vector3 newPos = cameraTransform.position + dir * amount * zoomSpeed;
 
+        // jarak minimum kamera ke ground
+        float minHeight = minZoom;
+
+        if (newPos.y < minHeight)
+            return;
+
+        cameraTransform.position = newPos;
+    }
 
     // ================= CLAMP =================
     void ClampPosition()

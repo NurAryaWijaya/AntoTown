@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -6,6 +6,7 @@ public class MainMenu : MonoBehaviour
 {
     [Header("UI")]
     public Button loadGameButton;
+    public GameObject loadingPanel;
 
     private const string SAVE_KEY = "HAS_SAVE";
 
@@ -29,7 +30,7 @@ public class MainMenu : MonoBehaviour
         PlayerPrefs.Save();
 
         // Set flag supaya GameManager tau ini new game
-
+        loadingPanel.SetActive(true);
         SceneManager.LoadScene("GamePlay");
     }
 
@@ -39,6 +40,7 @@ public class MainMenu : MonoBehaviour
     {
         if (PlayerPrefs.GetInt(SAVE_KEY, 0) == 0)
             return;
+        loadingPanel.SetActive(true);
 
         PlayerPrefs.SetInt("IS_LOAD_GAME", 1);
         PlayerPrefs.Save();

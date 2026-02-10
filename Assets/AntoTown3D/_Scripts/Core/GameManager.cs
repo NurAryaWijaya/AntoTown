@@ -156,6 +156,18 @@ public class GameManager : MonoBehaviour
         UpdateUI();
     }
 
+    string FormatNumber(int value)
+    {
+        if (value >= 1_000_000_000)
+            return (value / 1_000_000_000f).ToString("0.#") + "B";
+        if (value >= 1_000_000)
+            return (value / 1_000_000f).ToString("0.#") + "M";
+        if (value >= 1_000)
+            return (value / 1_000f).ToString("0.#") + "K";
+
+        return value.ToString();
+    }
+
     void CalculateIncome()
     {
         int income = 0;
@@ -172,22 +184,29 @@ public class GameManager : MonoBehaviour
 
     public void UpdateUI()
     {
-        if (moneyText) moneyText.text = $"{money}";
-        if (populationText) populationText.text = $"{totalPopulation}";
-        if (happinessText) happinessText.text = $"{Mathf.RoundToInt(happiness)}%";
-        if (incomeText) incomeText.text = $"(+{lastIncome}) / {incomeInterval}s";
+        if (moneyText)
+            moneyText.text = FormatNumber(money);
+
+        if (populationText)
+            populationText.text = FormatNumber(totalPopulation);
+
+        if (happinessText)
+            happinessText.text = $"{Mathf.RoundToInt(happiness)}%";
+
+        if (incomeText)
+            incomeText.text = $"(+{FormatNumber(lastIncome)}) / {incomeInterval}s";
+
         if (jobsText)
-            jobsText.text = $"{totalJobs}";
+            jobsText.text = FormatNumber(totalJobs);
 
         if (jobBalanceText)
         {
             if (jobBalance >= 0)
-                jobBalanceText.text = $"+{jobBalance}";
+                jobBalanceText.text = "+" + FormatNumber(jobBalance);
             else
-                jobBalanceText.text = $"{jobBalance}";
+                jobBalanceText.text = "-" + FormatNumber(Mathf.Abs(jobBalance));
         }
     }
-
 
     // ===================== API =====================
 

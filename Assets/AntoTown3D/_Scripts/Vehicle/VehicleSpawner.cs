@@ -6,8 +6,10 @@ public class VehicleSpawner : MonoBehaviour
     public GameObject[] vehiclePrefabs;
     public GridManager gridManager;
 
-    [Header("Vehicle Settings")]
-    public float vehicleLifeTime = 10f; // ⏱ Bisa diatur di inspector
+    [Header("Vehicle Lifetime (Seconds)")]
+    public float minVehicleLifeTime = 300f; // 5 menit
+    public float maxVehicleLifeTime = 600f; // 10 menit
+
 
     void OnEnable()
     {
@@ -64,6 +66,12 @@ public class VehicleSpawner : MonoBehaviour
         }
 
         // 🔥 Auto destroy setelah vehicleLifeTime detik
-        Destroy(vehicle, vehicleLifeTime);
+        ScheduleVehicleDestroy(vehicle);
     }
+    void ScheduleVehicleDestroy(GameObject vehicle)
+    {
+        float lifeTime = Random.Range(minVehicleLifeTime, maxVehicleLifeTime);
+        Destroy(vehicle, lifeTime);
+    }
+
 }
