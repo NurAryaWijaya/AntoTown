@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections;
 
 public class VehicleSpawner : MonoBehaviour
 {
@@ -10,6 +11,22 @@ public class VehicleSpawner : MonoBehaviour
     public float minVehicleLifeTime = 300f; // 5 menit
     public float maxVehicleLifeTime = 600f; // 10 menit
 
+    [Header("Spawn Interval")]
+    public float spawnInterval = 600f;
+
+    void Start()
+    {
+        StartCoroutine(SpawnRoutine());
+    }
+    IEnumerator SpawnRoutine()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(spawnInterval);
+
+            SpawnAtRandomRoad();
+        }
+    }
 
     void OnEnable()
     {

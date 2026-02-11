@@ -6,7 +6,6 @@ public class UIManager : MonoBehaviour
     public GameObject buildPanel;
 
     [Header("Build Category Panels")]
-    public GameObject roadPanel;
     public GameObject residentPanel;
     public GameObject commercialPanel;
     public GameObject industryPanel;
@@ -24,7 +23,7 @@ public class UIManager : MonoBehaviour
     public void OpenBuildPanel()
     {
         buildPanel.SetActive(true);
-        ShowRoadPanel(); // default
+        ShowResidentPanel(); // default
     }
 
     public void CloseBuildPanel()
@@ -34,12 +33,6 @@ public class UIManager : MonoBehaviour
     }
 
     // ===== CATEGORY BUTTONS =====
-    public void ShowRoadPanel()
-    {
-        HideAllCategoryPanels();
-        roadPanel.SetActive(true);
-    }
-
     public void ShowResidentPanel()
     {
         HideAllCategoryPanels();
@@ -79,7 +72,6 @@ public class UIManager : MonoBehaviour
     // ===== HELPER =====
     public void HideAllCategoryPanels()
     {
-        roadPanel.SetActive(false);
         residentPanel.SetActive(false);
         commercialPanel.SetActive(false);
         industryPanel.SetActive(false);

@@ -5,6 +5,7 @@ public class GameExitMenu : MonoBehaviour
 {
     [Header("UI")]
     public GameObject exitPopupPanel;
+    public GameObject loadingPanel;
 
     private const string SAVE_KEY = "HAS_SAVE";
 
@@ -29,6 +30,7 @@ public class GameExitMenu : MonoBehaviour
     // SAVE + EXIT
     public void SaveAndExit()
     {
+        loadingPanel.SetActive(true);
         SaveGame();
         Time.timeScale = 1f;
 
@@ -38,6 +40,7 @@ public class GameExitMenu : MonoBehaviour
     // EXIT TANPA SAVE
     public void QuitWithoutSave()
     {
+        loadingPanel.SetActive(true);
         Time.timeScale = 1f;
         SceneManager.LoadScene("MainMenu");
     }

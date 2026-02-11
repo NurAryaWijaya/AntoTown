@@ -18,7 +18,6 @@ public class GridManager : MonoBehaviour
     public CameraController cameraController;
     public PlacementType currentPlacementType;
 
-
     [Header("Placement")]
     public GameObject previewObject;
 
@@ -29,8 +28,6 @@ public class GridManager : MonoBehaviour
     [HideInInspector]
     public Tile[,] tiles;
     public bool roadModeActive = false;
-
-    public GameObject loadingCanvas;
 
     List<Tile> highlightedTiles = new();
     List<Tile> areaHighlightedTiles = new();
@@ -116,7 +113,6 @@ public class GridManager : MonoBehaviour
                 tiles[x, z] = tile;
             }
         }
-        loadingCanvas.SetActive(false);
     }
     #endregion
 

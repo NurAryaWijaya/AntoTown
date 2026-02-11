@@ -51,7 +51,9 @@ public static class SaveSystem
                 incomePerTick = b.incomePerTick,
                 connectedToRoad = b.connectedToRoad,
                 connectedToPower = b.connectedToPower,
-                connectedToWater = b.connectedToWater
+                connectedToWater = b.connectedToWater,
+                nextUpgradeTime = b.nextUpgradeTime,
+                facilityUnlocked = b.facilityUnlocked,
             };
             data.buildings.Add(bd);
         }
@@ -196,6 +198,9 @@ public static class SaveSystem
         b.level = bd.level;
         b.currentPopulation = bd.currentPopulation;
         b.upgradeTimer = bd.upgradeTimer;
+        b.nextUpgradeTime = bd.nextUpgradeTime;
+b.facilityUnlocked = bd.facilityUnlocked;
+
     }
 
 }

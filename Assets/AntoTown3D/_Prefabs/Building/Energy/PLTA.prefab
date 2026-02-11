@@ -361,7 +361,7 @@ MonoBehaviour:
   currentHappiness: 70
   efficiency: 1
   zoneTier: 1
-  buildPrice: 200
+  buildPrice: 500
   populationCapacity: 0
   currentPopulation: 0
   incomePerTick: 0

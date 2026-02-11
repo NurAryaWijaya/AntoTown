@@ -229,6 +229,7 @@ MonoBehaviour:
   buildingName: 
   cost: 0
   population: 0
+  anchorTile: {x: 0, y: 0}
   size: {x: 4, y: 4, z: 4}
   buildingType: 2
   level: 2
@@ -242,14 +243,21 @@ MonoBehaviour:
   upgradeTimer: 0
   poorToMiddleInterval: 300
   middleToRichInterval: 600
+  nextUpgradeTime: -1
+  facilityUnlocked: 0
   poorMesh: {fileID: 306025238845588513}
   middleMesh: {fileID: 0}
   richMesh: {fileID: 0}
   happinessEffect: -35
   baseHappiness: 70
   jobCapacity: 1000
+  happinessPenaltyApplied: 0
+  happinessPenaltyValue: 30
+  facilityPenalty: -30
   currentHappiness: 70
-  buildPrice: 1600
+  efficiency: 1
+  zoneTier: 0
+  buildPrice: 8000
   populationCapacity: 0
   currentPopulation: 0
   incomePerTick: 180

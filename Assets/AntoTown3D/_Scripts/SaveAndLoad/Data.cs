@@ -28,6 +28,9 @@ public class BuildingData
     public bool connectedToRoad;
     public bool connectedToPower;
     public bool connectedToWater;
+    public float nextUpgradeTime;
+    public bool facilityUnlocked;
+
     // bisa tambah field lain sesuai kebutuhan
 }
 
